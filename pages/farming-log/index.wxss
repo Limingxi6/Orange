@@ -1,0 +1,123 @@
+.page {
+  min-height: 100vh;
+  background: #F5F5F5;
+  padding-bottom: 120rpx;
+}
+
+/* ====== 筛选标签 ====== */
+.filter-scroll {
+  white-space: nowrap;
+  background: #fff;
+  padding: 20rpx 0;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.filter-row {
+  display: inline-flex;
+  padding: 0 24rpx;
+  gap: 16rpx;
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 12rpx 24rpx;
+  font-size: 26rpx;
+  color: #666;
+  background: #F5F5F5;
+  border-radius: 32rpx;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.filter-chip.active {
+  background: #FF8C00;
+  color: #fff;
+}
+
+.chip-icon {
+  margin-right: 8rpx;
+}
+
+/* ====== 统计条 ====== */
+.stat-bar {
+  padding: 20rpx 32rpx 8rpx;
+}
+
+.stat-text {
+  font-size: 24rpx;
+  color: #bbb;
+}
+
+/* ====== 时间线区域 ====== */
+.timeline-wrapper {
+  padding: 8rpx 24rpx 0;
+}
+
+/* ====== 悬浮按钮 ====== */
+.fab {
+  position: fixed;
+  right: 40rpx;
+  bottom: 60rpx;
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 50%;
+  background: #FF8C00;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8rpx 28rpx rgba(255, 140, 0, 0.45);
+  z-index: 100;
+}
+
+.fab:active {
+  transform: scale(0.92);
+}
+
+/* ====== 详情弹窗 ====== */
+.detail-popup {
+  padding: 40rpx 0 60rpx;
+}
+
+.detail-title {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #222;
+  text-align: center;
+  margin-bottom: 28rpx;
+}
+
+.detail-section {
+  padding: 24rpx 36rpx;
+}
+
+.detail-label {
+  display: block;
+  font-size: 24rpx;
+  color: #999;
+  margin-bottom: 12rpx;
+}
+
+.detail-content {
+  display: block;
+  font-size: 28rpx;
+  color: #333;
+  line-height: 1.7;
+}
+
+.detail-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  margin-top: 8rpx;
+}
+
+.detail-img {
+  width: 180rpx;
+  height: 180rpx;
+  border-radius: 12rpx;
+  background: #f0f0f0;
+}

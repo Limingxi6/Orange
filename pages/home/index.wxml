@@ -1,0 +1,93 @@
+<view class="container">
+  <!-- 全局加载 -->
+  <view class="state-loading" wx:if="{{loading}}">
+    <van-loading size="48rpx" vertical>加载中...</van-loading>
+  </view>
+
+  <block wx:else>
+    <!-- 顶部天气卡片 -->
+    <view class="weather-card" wx:if="{{weather && !weatherFailed}}">
+      <view class="weather-main">
+        <text class="weather-condition">{{weather.condition}}</text>
+        <text class="weather-temp">{{weather.temp}}°C</text>
+      </view>
+      <view class="weather-detail">
+        <text class="weather-item">湿度 {{weather.humidity}}%</text>
+        <text class="weather-item">· {{weather.location}}</text>
+      </view>
+    </view>
+    <view class="weather-card weather-card--error" wx:elif="{{weatherFailed}}">
+      <view class="weather-main">
+        <text class="weather-condition">天气数据获取失败</text>
+      </view>
+      <view class="weather-detail">
+        <text class="weather-item weather-retry" bindtap="onRetry">点击重试</text>
+      </view>
+    </view>
+
+    <!-- 风险预警摘要 -->
+    <van-notice-bar
+      wx:if="{{riskSummary}}"
+      left-icon="volume-o"
+      text="{{riskSummary}}"
+      color="#FF8C00"
+      background="#FFF7ED"
+      custom-class="risk-notice"
+      bindtap="onRiskTap"
+    />
+    <van-notice-bar
+      wx:elif="{{riskFailed}}"
+      left-icon="warning-o"
+      text="风险信息获取失败，点击重试"
+      color="#999"
+      background="#F5F5F5"
+      custom-class="risk-notice"
+      bindtap="onRetry"
+    />
+
+    <!-- 快捷功能入口 -->
+    <view class="section-title">快捷功能</view>
+    <van-grid column-num="4" border="{{ false }}" custom-class="quick-grid">
+      <van-grid-item
+        wx:for="{{quickFunctions}}"
+        wx:key="id"
+        icon="{{item.vantIcon}}"
+        text="{{item.name}}"
+        icon-color="#FF8C00"
+        data-path="{{item.path}}"
+        bindclick="onQuickFunctionTap"
+      />
+    </van-grid>
+
+    <!-- 最近批次列表 -->
+    <view class="section-title">最近批次</view>
+
+    <view class="state-error" wx:if="{{batchFailed}}">
+      <van-empty image="error" description="批次数据加载失败">
+        <van-button round type="warning" size="small" color="#FF8C00" bindclick="onRetry" custom-class="retry-btn">重新加载</van-button>
+      </van-empty>
+    </view>
+
+    <van-empty wx:elif="{{recentBatches.length === 0}}" description="暂无批次数据" />
+
+    <van-cell-group wx:else inset border round custom-class="batch-group">
+      <van-cell
+        wx:for="{{recentBatches}}"
+        wx:key="id"
+        title="{{item.name}}"
+        label="{{item.plantDate}}"
+        is-link
+        data-id="{{item.id}}"
+        bindclick="onBatchTap"
+      >
+        <van-tag
+          slot="right-icon"
+          type="{{item.status === '种植中' ? 'warning' : 'success'}}"
+          plain
+        >
+          {{item.status}}
+        </van-tag>
+      </van-cell>
+    </van-cell-group>
+  </block>
+</view>

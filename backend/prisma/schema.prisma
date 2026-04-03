@@ -1,0 +1,245 @@
+// 橘源通后端 - Prisma Schema
+// MySQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// =========================
+// 枚举（MVP 可拓展）
+// =========================
+
+enum UserRole {
+  farmer
+  manager
+  admin
+}
+
+enum UserStatus {
+  active
+  disabled
+}
+
+enum DiseaseSeverity {
+  low
+  mid
+  high
+}
+
+enum DiseaseStatus {
+  normal
+  review
+}
+
+enum RiskLevel {
+  low
+  mid
+  high
+}
+
+enum ProductStatus {
+  pending
+  listed
+}
+
+// =========================
+// 1) User 用户
+// =========================
+
+model User {
+  id            Int        @id @default(autoincrement())
+  phone         String     @unique @db.VarChar(20)
+  passwordHash String     @map("password_hash") @db.VarChar(255)
+  nickname      String?    @db.VarChar(50)
+  avatarUrl     String?    @map("avatar_url") @db.VarChar(500)
+  role          UserRole   @default(farmer)
+  status        UserStatus @default(active)
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+
+  batches        Batch[]
+  farmingLogs    FarmingLog[] @relation("FarmingLogOperator")
+  diseaseRecords DiseaseRecord[] @relation("DiseaseRecordCreator")
+
+  @@map("users")
+}
+
+// =========================
+// 2) Batch 批次
+// =========================
+
+model Batch {
+  id                   Int       @id @default(autoincrement())
+  batchNo              String    @map("batch_no") @db.VarChar(64)
+  orchardName          String    @map("orchard_name") @db.VarChar(120)
+  variety              String    @db.VarChar(50)
+  area                 String?   @db.VarChar(20)
+  treeCount            Int?
+  plantingDate         DateTime  @map("planting_date") @db.Date
+  expectedHarvestDate DateTime? @map("expected_harvest_date") @db.Date
+  stage                String    @db.VarChar(20) // 苗期/花期/果实膨大期/成熟期/已采收（字符串以兼容前端）
+  status               String    @db.VarChar(20) // 种植中/已采收（字符串以兼容前端）
+  managerId            Int       @map("manager_id")
+  remark               String?   @db.Text
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+
+  manager       User         @relation(fields: [managerId], references: [id])
+  farmingLogs   FarmingLog[]
+  diseaseRecords DiseaseRecord[]
+  riskRecords   RiskRecord[]
+  products      Product[]
+
+  @@unique([batchNo])
+  @@index([managerId])
+  @@index([orchardName])
+  @@index([variety])
+  @@index([plantingDate])
+  @@map("batches")
+}
+
+// =========================
+// 3) FarmingLog 农事日志
+// =========================
+
+model FarmingLog {
+  id             Int      @id @default(autoincrement())
+  batchId        Int      @map("batch_id")
+  type           String   @db.VarChar(30) // 识别/浇水/施肥/喷药/修剪/采摘/分级/销售（字符串兼容前端）
+  title          String?  @db.VarChar(120)
+  content        String   @db.Text
+  operatorId     Int      @map("operator_id")
+  operationDate  DateTime @map("operation_date")
+  images         Json?    // string[] 或其他结构，MVP 用 Json
+  detail         Json?    // 兼容前端 logs 列表里的 detail 字段
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  batch     Batch @relation(fields: [batchId], references: [id])
+  operator  User   @relation("FarmingLogOperator", fields: [operatorId], references: [id])
+
+  @@index([batchId, type])
+  @@index([operatorId])
+  @@map("farming_logs")
+}
+
+// =========================
+// 4) DiseaseRecord 病害识别记录
+// =========================
+
+model DiseaseRecord {
+  id            Int              @id @default(autoincrement())
+  batchId       Int              @map("batch_id")
+  imageUrl      String?         @map("image_url") @db.VarChar(500)
+  diseaseName   String          @map("disease_name") @db.VarChar(120)
+  confidence    Float
+  severity      DiseaseSeverity
+  suggestion    String?
+  rawResult     Json            @map("raw_result")
+  status        DiseaseStatus   @default(normal)
+  createdBy     Int             @map("created_by")
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+
+  batch        Batch @relation(fields: [batchId], references: [id])
+  creator      User  @relation("DiseaseRecordCreator", fields: [createdBy], references: [id])
+
+  @@index([batchId])
+  @@index([batchId, createdAt])
+  @@map("disease_records")
+}
+
+// =========================
+// 5) RiskRecord 风险记录
+// =========================
+
+model RiskRecord {
+  id           Int       @id @default(autoincrement())
+  batchId      Int       @map("batch_id")
+  riskType     String    @map("risk_type") @db.VarChar(50)
+  riskLevel    RiskLevel @map("risk_level")
+  levelText    String?   @map("level_text") @db.VarChar(50)
+  summary      String?
+  suggestion   String?
+  sourceData   Json?     @map("source_data")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  batch Batch @relation(fields: [batchId], references: [id])
+
+  @@index([batchId, createdAt])
+  @@index([batchId])
+  @@map("risk_records")
+}
+
+// =========================
+// 6) Product 产品
+// =========================
+
+model Product {
+  id           Int           @id @default(autoincrement())
+  batchId      Int           @map("batch_id")
+  productName  String        @map("product_name") @db.VarChar(120)
+  grade        String?       @db.VarChar(20)
+  weight       Float?
+  unit          String?       @db.VarChar(20)
+  packageType  String?       @map("package_type") @db.VarChar(20)
+  price         String?      @db.VarChar(50) // MVP 存字符串，后续可迁移 Decimal/拆字段
+  qrCodeUrl    String?      @map("qr_code_url") @db.VarChar(500)
+  status        ProductStatus @default(pending)
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+
+  batch Batch @relation(fields: [batchId], references: [id])
+  traces TraceRecord[]
+
+  @@index([batchId, status])
+  @@index([batchId])
+  @@map("products")
+}
+
+// =========================
+// 7) TraceRecord 溯源
+// =========================
+
+model TraceRecord {
+  id                   Int      @id @default(autoincrement())
+  productId            Int      @map("product_id")
+  traceCode            String   @map("trace_code") @db.VarChar(128)
+  batchSnapshot        Json     @map("batch_snapshot")
+  logsSnapshot         Json     @map("logs_snapshot")
+  inspectionsSnapshot  Json     @map("inspections_snapshot")
+  chainHash            String   @map("chain_hash") @db.VarChar(128)
+  verified             Boolean  @default(false)
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([productId, createdAt])
+  @@unique([traceCode])
+  @@map("trace_records")
+}
+
+// =========================
+// 8) WeatherCache 天气缓存
+// =========================
+
+model WeatherCache {
+  id            Int      @id @default(autoincrement())
+  regionCode    String   @map("region_code") @db.VarChar(20)
+  weatherDate   DateTime @map("weather_date") @db.Date
+  currentData   Json     @map("current_data")
+  forecastData  Json     @map("forecast_data")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@unique([regionCode, weatherDate])
+  @@index([regionCode])
+  @@map("weather_cache")
+}

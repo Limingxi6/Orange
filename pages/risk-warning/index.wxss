@@ -1,0 +1,205 @@
+.page {
+  min-height: 100vh;
+  background: #F5F5F5;
+  padding: 24rpx;
+  padding-bottom: 60rpx;
+}
+
+/* ====== 天气卡片 ====== */
+.weather-card {
+  background: linear-gradient(135deg, #FF8C00 0%, #FFA726 100%);
+  border-radius: 24rpx;
+  padding: 36rpx 40rpx;
+  margin-bottom: 24rpx;
+  color: #fff;
+}
+
+.weather-card--error {
+  background: linear-gradient(135deg, #BDBDBD 0%, #E0E0E0 100%);
+}
+
+.weather-row-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16rpx;
+}
+
+.weather-left {
+  display: flex;
+  align-items: baseline;
+}
+
+.weather-temp {
+  font-size: 72rpx;
+  font-weight: 700;
+  line-height: 1;
+  margin-right: 12rpx;
+}
+
+.weather-condition {
+  font-size: 30rpx;
+  opacity: 0.95;
+}
+
+.weather-right {
+  padding-top: 8rpx;
+}
+
+.weather-location {
+  font-size: 26rpx;
+  opacity: 0.9;
+}
+
+.weather-row-bottom {
+  display: flex;
+  gap: 32rpx;
+}
+
+.weather-meta {
+  font-size: 24rpx;
+  opacity: 0.85;
+}
+
+.weather-retry {
+  text-decoration: underline;
+}
+
+/* ====== 通用卡片 ====== */
+.card {
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 28rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+}
+
+.card-title {
+  display: flex;
+  align-items: center;
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 24rpx;
+}
+
+.title-icon {
+  margin-right: 12rpx;
+}
+
+/* ====== 图表 ====== */
+.chart-container {
+  width: 100%;
+  height: 420rpx;
+}
+
+.chart-hint {
+  text-align: center;
+  margin-top: 12rpx;
+}
+
+.hint-text {
+  font-size: 22rpx;
+  color: #ccc;
+}
+
+/* ====== 风险评估 ====== */
+.risk-assess-card {
+  border-left: 8rpx solid #FF8C00;
+}
+
+.risk-level-row {
+  margin-bottom: 24rpx;
+}
+
+.risk-section {
+  margin-bottom: 20rpx;
+}
+
+.risk-section:last-child {
+  margin-bottom: 0;
+}
+
+.risk-label {
+  display: block;
+  font-size: 24rpx;
+  color: #999;
+  margin-bottom: 8rpx;
+}
+
+.risk-body {
+  display: block;
+  font-size: 28rpx;
+  color: #333;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+/* ====== 天气列表 ====== */
+.forecast-grid {
+  font-size: 26rpx;
+}
+
+.forecast-row {
+  display: flex;
+  align-items: center;
+  padding: 18rpx 0;
+  border-bottom: 1rpx solid #F5F5F5;
+}
+
+.forecast-row:last-child {
+  border-bottom: none;
+}
+
+.forecast-header-row {
+  font-size: 22rpx;
+  color: #bbb;
+  padding: 12rpx 0;
+}
+
+.row-danger {
+  background: #FFF8F0;
+  border-radius: 8rpx;
+  margin: 0 -8rpx;
+  padding-left: 8rpx;
+  padding-right: 8rpx;
+}
+
+.fc-date {
+  width: 110rpx;
+  color: #333;
+}
+
+.fc-icon {
+  width: 80rpx;
+  color: #666;
+}
+
+.fc-temp {
+  flex: 1;
+  color: #333;
+}
+
+.fc-hum {
+  width: 100rpx;
+  text-align: center;
+  color: #999;
+}
+
+.fc-risk {
+  width: 80rpx;
+  text-align: center;
+  font-weight: 600;
+}
+
+.risk-high {
+  color: #F44336;
+}
+
+.risk-mid {
+  color: #FF8C00;
+}
+
+.risk-low {
+  color: #4CAF50;
+}

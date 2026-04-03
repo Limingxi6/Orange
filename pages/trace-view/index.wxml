@@ -1,0 +1,221 @@
+<view class="page">
+  <!-- ====== 加载中 ====== -->
+  <view class="state-loading" wx:if="{{loading}}">
+    <van-loading size="48rpx" vertical>加载溯源信息...</van-loading>
+  </view>
+
+  <!-- ====== 缺少批次ID ====== -->
+  <van-empty wx:elif="{{noBatchId}}" description="缺少批次信息，无法查看溯源" />
+
+  <!-- ====== 加载失败 ====== -->
+  <view class="state-error" wx:elif="{{loadFailed}}">
+    <van-empty image="error" description="溯源信息加载失败">
+      <van-button round type="warning" size="small" color="#FF8C00" bindclick="onRetry" custom-class="retry-btn">重新加载</van-button>
+    </van-empty>
+  </view>
+
+  <!-- ====== 空数据 ====== -->
+  <van-empty wx:elif="{{!batchInfo}}" image="search" description="未找到溯源信息" />
+
+  <!-- ====== 正常内容 ====== -->
+  <block wx:else>
+
+    <!-- ====== 产品头图区 ====== -->
+    <view class="hero-card">
+      <view class="hero-top">
+        <view class="hero-variety">{{batchInfo.variety || '--'}}</view>
+        <view class="hero-name">{{batchInfo.name || '--'}}</view>
+      </view>
+      <view class="hero-bottom" wx:if="{{gradeInfo}}">
+        <view class="grade-badge">{{gradeInfo.grade}}</view>
+        <text class="hero-price">建议零售价 {{gradeInfo.retailPrice}}</text>
+      </view>
+      <view class="hero-trust">
+        <van-icon name="shield-o" size="28rpx" color="#fff" />
+        <text class="trust-text">溯源信息由区块链存证保障</text>
+      </view>
+    </view>
+
+    <!-- ====== 产品信息 ====== -->
+    <view class="card">
+      <view class="card-title">
+        <van-icon name="shop-o" color="#FF8C00" size="36rpx" custom-class="title-icon" />
+        <text>产品信息</text>
+      </view>
+      <van-cell-group inset border="{{false}}">
+        <van-cell title="品种" value="{{batchInfo.variety || '--'}}" />
+        <van-cell title="产地" value="{{batchInfo.plotLocation || '--'}}" />
+        <van-cell title="地块" value="{{batchInfo.plotName || '--'}}" />
+        <van-cell title="面积" value="{{batchInfo.area || '--'}}" />
+        <van-cell title="种植日期" value="{{batchInfo.plantDate || '--'}}" />
+        <van-cell title="当前阶段">
+          <van-tag slot="right-icon" type="warning" plain round>{{batchInfo.stage || '--'}}</van-tag>
+        </van-cell>
+      </van-cell-group>
+    </view>
+
+    <!-- ====== 分级信息 ====== -->
+    <view class="card" wx:if="{{gradeInfo}}">
+      <view class="card-title">
+        <van-icon name="gem-o" color="#FF8C00" size="36rpx" custom-class="title-icon" />
+        <text>品质分级</text>
+      </view>
+      <view class="grade-summary">
+        <view class="grade-main">
+          <view class="grade-badge-lg">{{gradeInfo.grade}}</view>
+        </view>
+        <view class="grade-prices">
+          <view class="price-line">
+            <text class="price-label">零售价</text>
+            <text class="price-val retail">{{gradeInfo.retailPrice || '--'}}</text>
+          </view>
+          <view class="price-line">
+            <text class="price-label">批发价</text>
+            <text class="price-val wholesale">{{gradeInfo.wholesalePrice || '--'}}</text>
+          </view>
+        </view>
+      </view>
+      <view class="score-row">
+        <view class="score-chip">
+          <text class="chip-label">色泽</text>
+          <text class="chip-val">{{gradeInfo.colorScore != null ? gradeInfo.colorScore : '--'}}</text>
+        </view>
+        <view class="score-chip">
+          <text class="chip-label">果径</text>
+          <text class="chip-val">{{gradeInfo.sizeScore != null ? gradeInfo.sizeScore : '--'}}</text>
+        </view>
+        <view class="score-chip">
+          <text class="chip-label">成熟度</text>
+          <text class="chip-val">{{gradeInfo.maturityScore != null ? gradeInfo.maturityScore : '--'}}</text>
+        </view>
+        <view class="score-chip defect">
+          <text class="chip-label">缺陷率</text>
+          <text class="chip-val">{{gradeInfo.defectRatio != null ? gradeInfo.defectRatio + '%' : '--'}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- ====== 农事时间线 ====== -->
+    <view class="card">
+      <view class="card-title">
+        <van-icon name="notes-o" color="#FF8C00" size="36rpx" custom-class="title-icon" />
+        <text>农事记录</text>
+        <text class="title-count">{{timeline.length}} 条</text>
+      </view>
+      <van-empty wx:if="{{timeline.length === 0}}" description="暂无农事记录" />
+      <view class="trace-timeline" wx:else>
+        <view class="tl-item" wx:for="{{timeline}}" wx:key="index">
+          <view class="tl-node">
+            <view class="tl-dot {{index === 0 ? 'first' : ''}}"></view>
+            <view class="tl-line" wx:if="{{index < timeline.length - 1}}"></view>
+          </view>
+          <view class="tl-body">
+            <view class="tl-head">
+              <van-tag color="#FF8C00" plain round size="medium" custom-class="tl-type">{{item.type}}</van-tag>
+              <text class="tl-time">{{item.time}}</text>
+            </view>
+            <text class="tl-desc">{{item.content}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- ====== 病害检测记录 ====== -->
+    <view class="card">
+      <view class="card-title">
+        <van-icon name="scan" color="#FF8C00" size="36rpx" custom-class="title-icon" />
+        <text>病害检测</text>
+      </view>
+      <van-empty wx:if="{{diseaseRecords.length === 0}}" image="search" description="暂无检测记录" />
+      <view class="disease-list" wx:else>
+        <view class="disease-item" wx:for="{{diseaseRecords}}" wx:key="index">
+          <view class="disease-head">
+            <van-tag
+              type="{{item.status === 'normal' ? 'success' : item.severity === '高' ? 'danger' : 'warning'}}"
+              round
+              size="medium"
+            >{{item.label}}</van-tag>
+            <text class="disease-conf">置信度 {{item.confidence}}%</text>
+          </view>
+          <view class="disease-meta">
+            <text class="disease-date">{{item.date}}</text>
+            <text class="disease-sev" wx:if="{{item.severity && item.severity !== '无'}}">严重程度：{{item.severity}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- ====== 区块链存证 ====== -->
+    <view class="card chain-card">
+      <view class="card-title">
+        <van-icon name="shield-o" color="#FF8C00" size="36rpx" custom-class="title-icon" />
+        <text>区块链存证</text>
+      </view>
+
+      <!-- 总状态 -->
+      <view class="chain-banner {{overallChainStatus === 'verified' ? 'verified' : overallChainStatus === 'failed' ? 'failed' : 'pending'}}">
+        <van-icon
+          name="{{overallChainStatus === 'verified' ? 'checked' : overallChainStatus === 'failed' ? 'close' : 'clock-o'}}"
+          size="44rpx"
+          color="{{overallChainStatus === 'verified' ? '#4CAF50' : overallChainStatus === 'failed' ? '#F44336' : '#FF9800'}}"
+        />
+        <view class="banner-text">
+          <text class="banner-title">{{overallChainStatus === 'verified' ? '数据已上链验证' : overallChainStatus === 'failed' ? '链上验证未通过' : '部分数据待验证'}}</text>
+          <text class="banner-sub">{{verifiedCount}} / {{totalAnchorCount}} 个关键节点已存证</text>
+        </view>
+      </view>
+
+      <!-- 节点列表 -->
+      <van-collapse value="{{expandChain}}" bind:change="onCollapseChange" wx:if="{{chainAnchors.length > 0}}">
+        <van-collapse-item title="存证节点明细" name="chain" icon="list-switch">
+          <view class="anchor-list">
+            <view class="anchor-item" wx:for="{{chainAnchors}}" wx:key="index">
+              <view class="anchor-head">
+                <van-icon
+                  name="{{item.status === 'verified' ? 'passed' : 'clock-o'}}"
+                  size="32rpx"
+                  color="{{item.status === 'verified' ? '#4CAF50' : '#FF9800'}}"
+                  custom-class="anchor-icon"
+                />
+                <text class="anchor-event">{{item.eventType}}</text>
+                <van-tag
+                  type="{{item.status === 'verified' ? 'success' : 'warning'}}"
+                  plain round size="small"
+                >{{item.status === 'verified' ? '已验证' : '待验证'}}</van-tag>
+              </view>
+              <view class="anchor-detail">
+                <text class="anchor-time">{{item.time}}</text>
+                <view class="anchor-tx" wx:if="{{item.txId}}" bindtap="onCopyTxId" data-txid="{{item.txId}}">
+                  <text class="tx-label">TxID:</text>
+                  <text class="tx-value">{{item.txId}}</text>
+                  <van-icon name="description" size="24rpx" color="#bbb" custom-class="copy-icon" />
+                </view>
+              </view>
+            </view>
+          </view>
+        </van-collapse-item>
+      </van-collapse>
+
+      <!-- 重新验证 -->
+      <van-button
+        plain
+        round
+        type="warning"
+        color="#FF8C00"
+        size="small"
+        loading="{{verifying}}"
+        loading-text="验证中..."
+        bind:click="onVerifyChain"
+        icon="shield-o"
+        custom-class="verify-btn"
+      >重新验证</van-button>
+    </view>
+
+    <!-- ====== 底部说明 ====== -->
+    <view class="footer-note">
+      <van-icon name="info-o" size="24rpx" color="#ccc" />
+      <text class="note-text">以上信息由橘源通系统自动采集，关键节点经区块链存证，不可篡改</text>
+    </view>
+
+  </block>
+</view>

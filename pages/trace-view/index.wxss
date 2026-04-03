@@ -1,0 +1,422 @@
+.page {
+  min-height: 100vh;
+  background: #F4F4F4;
+  padding: 0 0 40rpx;
+}
+
+/* ====== 头图区 ====== */
+.hero-card {
+  background: linear-gradient(135deg, #FF8C00 0%, #E67E00 100%);
+  padding: 48rpx 36rpx 36rpx;
+  color: #fff;
+}
+
+.hero-top {
+  margin-bottom: 20rpx;
+}
+
+.hero-variety {
+  font-size: 44rpx;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.hero-name {
+  font-size: 26rpx;
+  opacity: 0.85;
+  margin-top: 8rpx;
+}
+
+.hero-bottom {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.grade-badge {
+  background: rgba(255, 255, 255, 0.25);
+  padding: 8rpx 24rpx;
+  border-radius: 8rpx;
+  font-size: 26rpx;
+  font-weight: 600;
+  margin-right: 20rpx;
+}
+
+.hero-price {
+  font-size: 26rpx;
+  opacity: 0.95;
+}
+
+.hero-trust {
+  display: flex;
+  align-items: center;
+  opacity: 0.8;
+}
+
+.trust-text {
+  font-size: 22rpx;
+  margin-left: 8rpx;
+}
+
+/* ====== 通用卡片 ====== */
+.card {
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 28rpx;
+  margin: 24rpx 24rpx 0;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+}
+
+.card-title {
+  display: flex;
+  align-items: center;
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 24rpx;
+}
+
+.title-icon {
+  margin-right: 12rpx;
+}
+
+.title-count {
+  margin-left: auto;
+  font-size: 24rpx;
+  color: #bbb;
+  font-weight: 400;
+}
+
+/* ====== 分级 ====== */
+.grade-summary {
+  display: flex;
+  align-items: center;
+  margin-bottom: 24rpx;
+}
+
+.grade-main {
+  margin-right: 32rpx;
+}
+
+.grade-badge-lg {
+  background: linear-gradient(135deg, #FF8C00, #FFA726);
+  color: #fff;
+  padding: 16rpx 36rpx;
+  border-radius: 16rpx;
+  font-size: 36rpx;
+  font-weight: 700;
+}
+
+.grade-prices {
+  flex: 1;
+}
+
+.price-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12rpx;
+}
+
+.price-line:last-child {
+  margin-bottom: 0;
+}
+
+.price-label {
+  font-size: 24rpx;
+  color: #999;
+}
+
+.price-val {
+  font-size: 28rpx;
+  font-weight: 600;
+}
+
+.price-val.retail {
+  color: #FF8C00;
+}
+
+.price-val.wholesale {
+  color: #42A5F5;
+}
+
+.score-row {
+  display: flex;
+  gap: 16rpx;
+}
+
+.score-chip {
+  flex: 1;
+  text-align: center;
+  background: #FFF7ED;
+  border-radius: 12rpx;
+  padding: 16rpx 0;
+}
+
+.score-chip.defect {
+  background: #FFF0F0;
+}
+
+.chip-label {
+  display: block;
+  font-size: 22rpx;
+  color: #999;
+  margin-bottom: 6rpx;
+}
+
+.chip-val {
+  display: block;
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #FF8C00;
+}
+
+.score-chip.defect .chip-val {
+  color: #EF5350;
+}
+
+/* ====== 农事时间线 ====== */
+.trace-timeline {
+  padding-left: 4rpx;
+}
+
+.tl-item {
+  display: flex;
+  padding-bottom: 4rpx;
+}
+
+.tl-item:last-child {
+  padding-bottom: 0;
+}
+
+.tl-node {
+  position: relative;
+  width: 36rpx;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.tl-dot {
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+  background: #FFB74D;
+  margin-top: 12rpx;
+}
+
+.tl-dot.first {
+  width: 20rpx;
+  height: 20rpx;
+  background: #FF8C00;
+  box-shadow: 0 0 0 6rpx rgba(255, 140, 0, 0.15);
+  margin-top: 10rpx;
+}
+
+.tl-line {
+  width: 2rpx;
+  flex: 1;
+  min-height: 20rpx;
+  background: #FFE0B2;
+}
+
+.tl-body {
+  flex: 1;
+  margin-left: 16rpx;
+  margin-bottom: 24rpx;
+  padding: 16rpx 20rpx;
+  background: #FAFAFA;
+  border-radius: 12rpx;
+}
+
+.tl-head {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8rpx;
+}
+
+.tl-type {
+  margin-right: 12rpx;
+}
+
+.tl-time {
+  font-size: 22rpx;
+  color: #bbb;
+}
+
+.tl-desc {
+  display: block;
+  font-size: 26rpx;
+  color: #555;
+  line-height: 1.6;
+}
+
+/* ====== 病害检测 ====== */
+.disease-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.disease-item {
+  padding: 20rpx;
+  background: #FAFAFA;
+  border-radius: 12rpx;
+}
+
+.disease-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10rpx;
+}
+
+.disease-conf {
+  font-size: 24rpx;
+  color: #999;
+}
+
+.disease-meta {
+  display: flex;
+  gap: 24rpx;
+}
+
+.disease-date {
+  font-size: 22rpx;
+  color: #bbb;
+}
+
+.disease-sev {
+  font-size: 22rpx;
+  color: #FF9800;
+}
+
+/* ====== 区块链存证 ====== */
+.chain-card {
+  padding-bottom: 20rpx;
+}
+
+.chain-banner {
+  display: flex;
+  align-items: center;
+  padding: 24rpx;
+  border-radius: 16rpx;
+  margin-bottom: 20rpx;
+}
+
+.chain-banner.verified {
+  background: #E8F5E9;
+}
+
+.chain-banner.failed {
+  background: #FFEBEE;
+}
+
+.chain-banner.pending {
+  background: #FFF3E0;
+}
+
+.banner-text {
+  margin-left: 16rpx;
+}
+
+.banner-title {
+  display: block;
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.banner-sub {
+  display: block;
+  font-size: 22rpx;
+  color: #999;
+  margin-top: 4rpx;
+}
+
+.anchor-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.anchor-item {
+  padding: 16rpx 0;
+  border-bottom: 1rpx solid #F5F5F5;
+}
+
+.anchor-item:last-child {
+  border-bottom: none;
+}
+
+.anchor-head {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8rpx;
+}
+
+.anchor-icon {
+  margin-right: 10rpx;
+}
+
+.anchor-event {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #333;
+  flex: 1;
+}
+
+.anchor-detail {
+  padding-left: 42rpx;
+}
+
+.anchor-time {
+  display: block;
+  font-size: 22rpx;
+  color: #999;
+  margin-bottom: 6rpx;
+}
+
+.anchor-tx {
+  display: flex;
+  align-items: center;
+}
+
+.tx-label {
+  font-size: 22rpx;
+  color: #bbb;
+  margin-right: 8rpx;
+}
+
+.tx-value {
+  font-size: 20rpx;
+  color: #999;
+  font-family: 'Courier New', monospace;
+  max-width: 400rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.copy-icon {
+  margin-left: 8rpx;
+}
+
+.verify-btn {
+  margin-top: 16rpx;
+}
+
+/* ====== 底部说明 ====== */
+.footer-note {
+  display: flex;
+  align-items: flex-start;
+  padding: 24rpx 36rpx 0;
+}
+
+.note-text {
+  font-size: 22rpx;
+  color: #ccc;
+  margin-left: 8rpx;
+  line-height: 1.5;
+}

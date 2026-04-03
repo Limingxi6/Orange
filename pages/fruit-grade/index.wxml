@@ -1,0 +1,162 @@
+<view class="page">
+  <!-- ====== 果实照片 ====== -->
+  <view class="section-card">
+    <view class="card-title">
+      <van-icon name="photograph" color="#FF8C00" size="36rpx" custom-class="title-icon" />
+      <text>果实照片</text>
+    </view>
+    <view class="upload-area">
+      <van-uploader
+        file-list="{{fileList}}"
+        max-count="1"
+        preview-size="500rpx"
+        accept="image"
+        bind:after-read="onAfterRead"
+        bind:delete="onDeleteImage"
+        upload-icon="photograph"
+        upload-text="拍摄单果照片（建议使用刻度背景板）"
+        image-fit="aspectFill"
+      />
+    </view>
+    <van-notice-bar
+      left-icon="info-o"
+      text="请在固定背景板上单果/单层摆放、光照均匀条件下拍摄，以获取更准确的分级结果"
+      color="#999"
+      background="#FAFAFA"
+      custom-class="tip-bar"
+    />
+  </view>
+
+  <!-- ====== 补充信息 ====== -->
+  <view class="section-card">
+    <view class="card-title">
+      <van-icon name="edit" color="#FF8C00" size="36rpx" custom-class="title-icon" />
+      <text>补充信息</text>
+    </view>
+    <van-cell-group inset border="{{false}}">
+      <van-cell
+        title="销售渠道"
+        value="{{channel}}"
+        is-link
+        bindtap="onShowChannelPicker"
+      />
+      <van-cell
+        title="包装方式"
+        value="{{packaging}}"
+        is-link
+        bindtap="onShowPackagePicker"
+      />
+      <van-cell
+        title="销售地区"
+        value="{{region}}"
+        is-link
+        bindtap="onShowRegionPicker"
+      />
+    </van-cell-group>
+  </view>
+
+  <!-- ====== 分级按钮 ====== -->
+  <van-button
+    type="warning"
+    block
+    round
+    color="#FF8C00"
+    size="large"
+    loading="{{grading}}"
+    loading-text="AI 分级中..."
+    disabled="{{!imagePath}}"
+    bind:click="onStartGrade"
+    custom-class="grade-btn"
+  >
+    <van-icon name="gem-o" custom-class="btn-icon" />开始分级与估价
+  </van-button>
+
+  <!-- ====== 分级失败 ====== -->
+  <view class="result-section" wx:if="{{gradeFailed}}">
+    <van-divider content-position="center" custom-style="margin:32rpx 0 28rpx;color:#999;">
+      分级结果
+    </van-divider>
+    <view class="section-card fail-card">
+      <van-empty image="error" description="分级失败，请检查网络后重试">
+        <van-button round type="warning" size="small" color="#FF8C00" bind:click="onStartGrade" custom-class="retry-btn">重新分级</van-button>
+      </van-empty>
+    </view>
+  </view>
+
+  <!-- ====== 分级结果 ====== -->
+  <view class="result-section" wx:if="{{showResult}}">
+    <van-divider content-position="center" custom-style="margin:32rpx 0 28rpx;color:#999;">
+      分级结果
+    </van-divider>
+
+    <!-- 等级徽章 + 评分条 -->
+    <view class="section-card score-card">
+      <view class="grade-row">
+        <view class="grade-badge">{{result.grade}}</view>
+        <van-tag type="warning" plain round size="medium" wx:if="{{result.variety}}">{{result.variety}}</van-tag>
+      </view>
+
+      <view class="score-list">
+        <view class="score-item" wx:for="{{scores}}" wx:key="label">
+          <text class="score-label">{{item.label}}</text>
+          <view class="score-bar-wrap">
+            <view class="score-bar {{item.color}}" style="width: {{item.value}}%"></view>
+          </view>
+          <text class="score-value">{{item.value}}{{item.suffix || '分'}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- price-panel 组件 -->
+    <price-panel
+      variety="{{result.variety}}"
+      grade="{{result.grade}}"
+      min-price="{{result.retailMinPrice}}"
+      max-price="{{result.retailMaxPrice}}"
+      wholesale-min="{{result.wholesaleMinPrice}}"
+      wholesale-max="{{result.wholesaleMaxPrice}}"
+      reason="{{result.reason}}"
+      risk-warning="{{result.riskWarning}}"
+      factors="{{result.factors}}"
+    />
+
+    <!-- 市场基准价（分级成功后异步加载） -->
+    <view class="baseline-info" wx:if="{{baseline}}">
+      <van-icon name="chart-trending-o" size="28rpx" color="#999" custom-class="baseline-icon" />
+      <text class="baseline-text">
+        当前市场基准价 {{baseline.basePrice}} {{baseline.unit}}（{{baseline.updateTime}} 更新）
+      </text>
+    </view>
+  </view>
+
+  <!-- ====== Picker 弹窗 ====== -->
+  <van-popup show="{{showChannelPicker}}" position="bottom" round bind:close="onCloseChannelPicker">
+    <van-picker
+      columns="{{channelColumns}}"
+      show-toolbar
+      title="选择销售渠道"
+      bind:confirm="onConfirmChannel"
+      bind:cancel="onCloseChannelPicker"
+    />
+  </van-popup>
+
+  <van-popup show="{{showPackagePicker}}" position="bottom" round bind:close="onClosePackagePicker">
+    <van-picker
+      columns="{{packageColumns}}"
+      show-toolbar
+      title="选择包装方式"
+      bind:confirm="onConfirmPackage"
+      bind:cancel="onClosePackagePicker"
+    />
+  </van-popup>
+
+  <van-popup show="{{showRegionPicker}}" position="bottom" round bind:close="onCloseRegionPicker">
+    <van-picker
+      columns="{{regionColumns}}"
+      show-toolbar
+      title="选择销售地区"
+      bind:confirm="onConfirmRegion"
+      bind:cancel="onCloseRegionPicker"
+    />
+  </van-popup>
+</view>

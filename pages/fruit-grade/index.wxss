@@ -1,0 +1,155 @@
+.page {
+  min-height: 100vh;
+  background: #F5F5F5;
+  padding: 24rpx;
+  padding-bottom: 60rpx;
+}
+
+/* ====== 通用卡片 ====== */
+.section-card {
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 28rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+}
+
+.card-title {
+  display: flex;
+  align-items: center;
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 24rpx;
+}
+
+.title-icon {
+  margin-right: 12rpx;
+}
+
+/* ====== 上传 ====== */
+.upload-area {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16rpx;
+}
+
+.tip-bar {
+  border-radius: 10rpx;
+  overflow: hidden;
+}
+
+/* ====== 按钮 ====== */
+.grade-btn {
+  margin-bottom: 8rpx;
+}
+
+.btn-icon {
+  margin-right: 10rpx;
+}
+
+/* ====== 结果 ====== */
+.result-section {
+  animation: fadeUp 0.35s ease-out;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(30rpx); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* 失败卡片 */
+.fail-card {
+  padding-top: 16rpx;
+}
+
+/* 评分卡片 */
+.score-card {
+  margin-bottom: 24rpx;
+}
+
+.grade-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 28rpx;
+}
+
+.grade-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, #FF8C00 0%, #FFA726 100%);
+  color: #fff;
+  padding: 12rpx 36rpx;
+  border-radius: 12rpx;
+  font-size: 34rpx;
+  font-weight: 700;
+}
+
+/* 评分条 */
+.score-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.score-item {
+  display: flex;
+  align-items: center;
+}
+
+.score-label {
+  width: 140rpx;
+  font-size: 26rpx;
+  color: #666;
+  flex-shrink: 0;
+}
+
+.score-bar-wrap {
+  flex: 1;
+  height: 20rpx;
+  background: #F0F0F0;
+  border-radius: 10rpx;
+  overflow: hidden;
+  margin: 0 16rpx;
+}
+
+.score-bar {
+  height: 100%;
+  border-radius: 10rpx;
+  background: linear-gradient(90deg, #FF8C00, #FFB74D);
+  transition: width 0.6s ease-out;
+}
+
+.score-bar.defect {
+  background: linear-gradient(90deg, #EF9A9A, #FFCDD2);
+}
+
+.score-value {
+  width: 80rpx;
+  font-size: 26rpx;
+  color: #666;
+  text-align: right;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+/* ====== 基准价信息 ====== */
+.baseline-info {
+  display: flex;
+  align-items: center;
+  padding: 20rpx 24rpx;
+  margin-top: 20rpx;
+  background: #FAFAFA;
+  border-radius: 12rpx;
+}
+
+.baseline-icon {
+  margin-right: 10rpx;
+  flex-shrink: 0;
+}
+
+.baseline-text {
+  font-size: 24rpx;
+  color: #999;
+  line-height: 1.5;
+}

@@ -1,0 +1,9 @@
+{
+  "navigationBarTitleText": "批次详情",
+  "usingComponents": {
+    "van-loading": "@vant/weapp/loading/index",
+    "van-empty": "@vant/weapp/empty/index",
+    "van-button": "@vant/weapp/button/index",
+    "van-action-sheet": "@vant/weapp/action-sheet/index"
+  }
+}

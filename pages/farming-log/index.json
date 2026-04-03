@@ -1,0 +1,16 @@
+{
+  "navigationBarTitleText": "农事日志",
+  "enablePullDownRefresh": true,
+  "usingComponents": {
+    "log-timeline": "/components/log-timeline/index",
+    "van-icon": "@vant/weapp/icon/index",
+    "van-button": "@vant/weapp/button/index",
+    "van-popup": "@vant/weapp/popup/index",
+    "van-cell": "@vant/weapp/cell/index",
+    "van-cell-group": "@vant/weapp/cell-group/index",
+    "van-tag": "@vant/weapp/tag/index",
+    "van-empty": "@vant/weapp/empty/index",
+    "van-divider": "@vant/weapp/divider/index",
+    "van-loading": "@vant/weapp/loading/index"
+  }
+}

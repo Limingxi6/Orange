@@ -1,0 +1,173 @@
+<view class="page">
+  <!-- ====== 全局加载 ====== -->
+  <view class="state-loading" wx:if="{{loading}}">
+    <van-loading size="48rpx" vertical>加载中...</van-loading>
+  </view>
+
+  <block wx:else>
+    <!-- ====== 当前天气 ====== -->
+    <view class="weather-card" wx:if="{{weather && !weatherFailed}}">
+      <view class="weather-row-top">
+        <view class="weather-left">
+          <text class="weather-temp">{{weather.temp}}°</text>
+          <text class="weather-condition">{{weather.condition}}</text>
+        </view>
+        <view class="weather-right">
+          <text class="weather-location">
+            <van-icon name="location-o" size="26rpx" /> {{weather.location}}
+          </text>
+        </view>
+      </view>
+      <view class="weather-row-bottom">
+        <text class="weather-meta">湿度 {{weather.humidity}}%</text>
+        <text class="weather-meta">风力 {{weather.wind}}</text>
+      </view>
+    </view>
+    <view class="weather-card weather-card--error" wx:elif="{{weatherFailed}}">
+      <view class="weather-row-top">
+        <view class="weather-left">
+          <text class="weather-condition">天气数据获取失败</text>
+        </view>
+      </view>
+      <view class="weather-row-bottom">
+        <text class="weather-meta weather-retry" bindtap="onRetry">点击重试</text>
+      </view>
+    </view>
+
+    <!-- ====== 风险趋势图 ====== -->
+    <view class="card">
+      <view class="card-title">
+        <van-icon name="chart-trending-o" color="#FF8C00" size="36rpx" custom-class="title-icon" />
+        <text>未来 7 天风险趋势</text>
+      </view>
+      <block wx:if="{{forecastFailed}}">
+        <van-empty image="error" description="预报数据加载失败">
+          <van-button round type="warning" size="small" color="#FF8C00" bindclick="onRetry" custom-class="retry-btn">重新加载</van-button>
+        </van-empty>
+      </block>
+      <block wx:elif="{{forecast7.length === 0}}">
+        <van-empty description="暂无预报数据" />
+      </block>
+      <block wx:else>
+        <view class="chart-container">
+          <ec-canvas id="riskChart" canvas-id="riskChart" ec="{{ec}}"></ec-canvas>
+        </view>
+        <view class="chart-hint">
+          <text class="hint-text">橙线为病害风险指数（0~100），虚线为高风险阈值</text>
+        </view>
+      </block>
+    </view>
+
+    <!-- ====== 风险评估 ====== -->
+    <view class="card risk-assess-card" wx:if="{{risk && !riskFailed}}">
+      <view class="card-title">
+        <van-icon name="warning-o" color="#FF8C00" size="36rpx" custom-class="title-icon" />
+        <text>综合风险评估</text>
+      </view>
+      <view class="risk-level-row">
+        <van-tag
+          type="{{risk.level === 'high' ? 'danger' : risk.level === 'mid' ? 'warning' : 'success'}}"
+          size="large"
+          round
+        >{{risk.levelText}}风险</van-tag>
+      </view>
+      <view class="risk-section">
+        <text class="risk-label">风险原因</text>
+        <text class="risk-body">{{risk.reason}}</text>
+      </view>
+      <view class="risk-section">
+        <text class="risk-label">管理建议</text>
+        <text class="risk-body">{{risk.suggestion}}</text>
+      </view>
+    </view>
+    <view class="card" wx:elif="{{riskFailed}}">
+      <view class="card-title">
+        <van-icon name="warning-o" color="#FF8C00" size="36rpx" custom-class="title-icon" />
+        <text>综合风险评估</text>
+      </view>
+      <van-empty image="error" description="风险评估加载失败">
+        <van-button round type="warning" size="small" color="#FF8C00" bindclick="onRetry" custom-class="retry-btn">重新加载</van-button>
+      </van-empty>
+    </view>
+
+    <!-- ====== 未来 7 天天气明细 ====== -->
+    <view class="card" wx:if="{{forecast7.length > 0}}">
+      <view class="card-title">
+        <van-icon name="umbrella-circle" color="#FF8C00" size="36rpx" custom-class="title-icon" />
+        <text>未来 7 天天气</text>
+      </view>
+      <view class="forecast-grid">
+        <view class="forecast-row forecast-header-row">
+          <text class="fc-date">日期</text>
+          <text class="fc-icon">天气</text>
+          <text class="fc-temp">温度</text>
+          <text class="fc-hum">湿度</text>
+          <text class="fc-risk">风险</text>
+        </view>
+        <view
+          class="forecast-row {{item.riskScore >= 60 ? 'row-danger' : ''}}"
+          wx:for="{{forecast7}}"
+          wx:key="date"
+        >
+          <text class="fc-date">{{item.date}}</text>
+          <text class="fc-icon">{{item.icon}}</text>
+          <text class="fc-temp">{{item.tempMin}}~{{item.tempMax}}°C</text>
+          <text class="fc-hum">{{item.humidity}}%</text>
+          <text class="fc-risk {{item.riskScore >= 60 ? 'risk-high' : item.riskScore >= 40 ? 'risk-mid' : 'risk-low'}}">{{item.riskScore}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- ====== 8~15 天预报（折叠） ====== -->
+    <view class="card" wx:if="{{forecastLater.length > 0}}">
+      <van-collapse value="{{expandLater}}" bind:change="onExpandChange">
+        <van-collapse-item title="更远预报（第 8~15 天）" name="later">
+          <view class="forecast-grid">
+            <view
+              class="forecast-row {{item.riskScore >= 60 ? 'row-danger' : ''}}"
+              wx:for="{{forecastLater}}"
+              wx:key="date"
+            >
+              <text class="fc-date">{{item.date}}</text>
+              <text class="fc-icon">{{item.icon}}</text>
+              <text class="fc-temp">{{item.tempMin}}~{{item.tempMax}}°C</text>
+              <text class="fc-hum">{{item.humidity}}%</text>
+              <text class="fc-risk {{item.riskScore >= 60 ? 'risk-high' : item.riskScore >= 40 ? 'risk-mid' : 'risk-low'}}">{{item.riskScore}}</text>
+            </view>
+          </view>
+        </van-collapse-item>
+      </van-collapse>
+    </view>
+
+    <!-- ====== 历史预警 ====== -->
+    <view class="card">
+      <view class="card-title">
+        <van-icon name="clock-o" color="#FF8C00" size="36rpx" custom-class="title-icon" />
+        <text>历史预警</text>
+      </view>
+      <block wx:if="{{historyFailed}}">
+        <van-empty image="error" description="历史预警加载失败">
+          <van-button round type="warning" size="small" color="#FF8C00" bindclick="onRetry" custom-class="retry-btn">重新加载</van-button>
+        </van-empty>
+      </block>
+      <block wx:elif="{{historyList.length === 0}}">
+        <van-empty description="暂无历史预警" />
+      </block>
+      <van-cell-group wx:else inset border="{{false}}">
+        <van-cell
+          wx:for="{{historyList}}"
+          wx:key="id"
+          title="{{item.date}}"
+          label="{{item.summary}}"
+        >
+          <van-tag
+            slot="right-icon"
+            type="{{item.level === 'high' ? 'danger' : item.level === 'mid' ? 'warning' : 'success'}}"
+            plain
+            round
+          >{{item.levelText}}</van-tag>
+        </van-cell>
+      </van-cell-group>
+    </view>
+  </block>
+</view>

@@ -1,0 +1,74 @@
+<view class="trace-block">
+  <!-- 产品信息区 -->
+  <view class="section product-section">
+    <view class="section-title">
+      <text class="title-text">产品信息</text>
+    </view>
+    <view class="product-info">
+      <view class="info-row" wx:if="{{batchName}}">
+        <text class="info-label">批次名称：</text>
+        <text class="info-value">{{batchName}}</text>
+      </view>
+      <view class="info-row" wx:if="{{variety}}">
+        <text class="info-label">品种：</text>
+        <text class="info-value">{{variety}}</text>
+      </view>
+      <view class="info-row" wx:if="{{plotName}}">
+        <text class="info-label">地块：</text>
+        <text class="info-value">{{plotName}}</text>
+      </view>
+      <view class="info-empty" wx:if="{{!batchName && !variety && !plotName}}">
+        <text>暂无产品信息</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 农事时间线区 -->
+  <view class="section timeline-section">
+    <view class="section-title">
+      <text class="title-text">农事时间线</text>
+    </view>
+    <view class="timeline-list">
+      <view class="timeline-item" wx:for="{{timelineList}}" wx:key="index">
+        <view class="timeline-node">
+          <view class="node-dot"></view>
+          <view class="node-line" wx:if="{{index < timelineList.length - 1}}"></view>
+        </view>
+        <view class="timeline-content">
+          <view class="timeline-header">
+            <text class="timeline-time">{{item.time || item.date}}</text>
+            <text class="timeline-type" wx:if="{{item.type}}">{{item.type}}</text>
+          </view>
+          <text class="timeline-desc" wx:if="{{item.content}}">{{item.content}}</text>
+          <text class="timeline-desc" wx:elif="{{item.desc}}">{{item.desc}}</text>
+        </view>
+      </view>
+      <view class="timeline-empty" wx:if="{{timelineList.length === 0}}">
+        <text>暂无农事记录</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 区块链验证状态区 -->
+  <view class="section chain-section">
+    <view class="section-title">
+      <text class="title-text">区块链验证</text>
+    </view>
+    <view class="chain-status {{statusClass}}">
+      <view class="status-icon">
+        <text class="icon-check" wx:if="{{chainStatus === 'verified'}}">✓</text>
+        <text class="icon-fail" wx:elif="{{chainStatus === 'failed'}}">✗</text>
+        <text class="icon-pending" wx:else>⋯</text>
+      </view>
+      <view class="status-text">
+        <text wx:if="{{chainStatus === 'verified'}}">验证通过</text>
+        <text wx:elif="{{chainStatus === 'failed'}}">验证失败</text>
+        <text wx:else>待验证</text>
+      </view>
+      <view class="tx-id" wx:if="{{txId}}">
+        <text class="tx-label">交易ID：</text>
+        <text class="tx-value">{{txId}}</text>
+      </view>
+    </view>
+  </view>
+</view>

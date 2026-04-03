@@ -1,0 +1,55 @@
+.page {
+  min-height: 100vh;
+  background: #F5F5F5;
+  padding: 24rpx;
+}
+
+.form-card {
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 40rpx 36rpx;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.08);
+}
+
+.field-group {
+  margin-bottom: 28rpx;
+}
+
+.field-label {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 12rpx;
+  padding-left: 4rpx;
+}
+
+.field-wrap {
+  background: #F7F7F7;
+  border-radius: 16rpx;
+  overflow: hidden;
+}
+
+.date-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx 32rpx;
+  min-height: 96rpx;
+  box-sizing: border-box;
+}
+
+.date-value {
+  font-size: 28rpx;
+  color: #333;
+}
+
+.date-placeholder {
+  font-size: 28rpx;
+  color: #c8c9cc;
+}
+
+.submit-btn {
+  margin-top: 48rpx;
+  height: 96rpx !important;
+  font-size: 32rpx !important;
+}

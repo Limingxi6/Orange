@@ -1,0 +1,77 @@
+<view class="container">
+  <!-- 加载中（仅登录后） -->
+  <view class="state-loading" wx:if="{{isLogin && loading}}">
+    <van-loading size="48rpx" vertical>加载中...</van-loading>
+  </view>
+
+  <!-- 加载失败 -->
+  <view class="state-error" wx:elif="{{isLogin && loadFailed}}">
+    <van-empty description="加载失败，请检查网络">
+      <van-button round type="warning" size="small" color="#FF8C00" bindclick="onRetry" custom-class="retry-btn">重新加载</van-button>
+    </van-empty>
+  </view>
+
+  <!-- 未登录状态 -->
+  <block wx:elif="{{!isLogin}}">
+    <view class="user-card" bindtap="goLogin">
+      <view class="avatar-wrap">
+        <view class="avatar-placeholder">
+          <text class="avatar-text">登录</text>
+        </view>
+      </view>
+      <text class="nickname">点击登录</text>
+      <text class="login-hint">登录后享受完整服务</text>
+    </view>
+
+    <view class="menu-list">
+      <view
+        wx:for="{{menuList}}"
+        wx:key="id"
+        class="menu-item"
+        data-path="{{item.path}}"
+        data-id="{{item.id}}"
+        bindtap="onMenuTap"
+      >
+        <text class="menu-name">{{item.name}}</text>
+        <text class="menu-arrow">›</text>
+      </view>
+    </view>
+  </block>
+
+  <!-- 已登录正常内容 -->
+  <block wx:else>
+    <view class="user-card">
+      <view class="avatar-wrap">
+        <image
+          wx:if="{{userInfo.avatar}}"
+          class="avatar"
+          src="{{userInfo.avatar}}"
+          mode="aspectFill"
+        />
+        <view wx:else class="avatar-placeholder">
+          <text class="avatar-text">{{userInfo.nickname[0] || '橘'}}</text>
+        </view>
+      </view>
+      <text class="nickname">{{userInfo.nickname || '用户'}}</text>
+      <text class="phone-text" wx:if="{{userInfo.phone}}">{{userInfo.phone}}</text>
+    </view>
+
+    <view class="menu-list">
+      <view
+        wx:for="{{menuList}}"
+        wx:key="id"
+        class="menu-item"
+        data-path="{{item.path}}"
+        data-id="{{item.id}}"
+        bindtap="onMenuTap"
+      >
+        <text class="menu-name">{{item.name}}</text>
+        <text class="menu-arrow">›</text>
+      </view>
+    </view>
+
+    <view class="logout-wrap">
+      <button class="logout-btn" bindtap="onLogout">退出登录</button>
+    </view>
+  </block>
+</view>

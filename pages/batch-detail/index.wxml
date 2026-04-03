@@ -1,0 +1,90 @@
+<view class="page">
+  <!-- 缺少批次 ID -->
+  <view class="state-error" wx:if="{{noBatchId}}">
+    <van-empty description="未指定批次，请从批次列表进入" image="search" />
+  </view>
+
+  <!-- 加载中 -->
+  <view class="state-loading" wx:elif="{{loading}}">
+    <van-loading size="48rpx" vertical>加载中...</van-loading>
+  </view>
+
+  <!-- 加载失败 -->
+  <view class="state-error" wx:elif="{{loadFailed}}">
+    <van-empty description="加载失败，请检查网络">
+      <van-button round type="warning" size="small" color="#FF8C00" bindclick="onRetry" custom-class="retry-btn">重新加载</van-button>
+    </van-empty>
+  </view>
+
+  <!-- 正常内容 -->
+  <block wx:else>
+    <!-- 批次基本信息卡片 -->
+    <view class="info-card">
+      <view class="card-title">{{batch.name}}</view>
+      <view class="info-row">
+        <text class="info-label">品种</text>
+        <text class="info-value">{{batch.variety}}</text>
+      </view>
+      <view class="info-row">
+        <text class="info-label">地块</text>
+        <text class="info-value">{{batch.plotName}}</text>
+      </view>
+      <view class="info-row">
+        <text class="info-label">种植日期</text>
+        <text class="info-value">{{batch.plantDate}}</text>
+      </view>
+      <view class="info-row info-row--tap" bindtap="onOpenStageSheet">
+        <text class="info-label">当前阶段</text>
+        <view class="info-value stage-value">
+          <text>{{batch.stage}}</text>
+          <text class="stage-arrow">›</text>
+        </view>
+      </view>
+      <view class="info-row">
+        <text class="info-label">状态</text>
+        <view class="info-value">
+          <text class="status-tag status-{{batch.statusClass}}">{{batch.status}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 快捷操作按钮行 -->
+    <view class="action-row">
+      <view class="action-btn" bindtap="onPhotoRecognize">
+        <text class="action-icon">📷</text>
+        <text class="action-text">拍照识别</text>
+      </view>
+      <view class="action-btn" bindtap="onLogRecord">
+        <text class="action-icon">📝</text>
+        <text class="action-text">记录日志</text>
+      </view>
+      <view class="action-btn" bindtap="onViewWarning">
+        <text class="action-icon">⚠️</text>
+        <text class="action-text">查看预警</text>
+      </view>
+    </view>
+
+    <!-- 最近农事日志摘要 -->
+    <view class="log-section">
+      <view class="section-title">最近农事日志</view>
+      <view class="log-list" wx:if="{{logList.length > 0}}">
+        <view class="log-item" wx:for="{{logList}}" wx:key="id">
+          <view class="log-date">{{item.time}}</view>
+          <view class="log-content">{{item.content}}</view>
+          <view class="log-type">{{item.typeText || item.type}}</view>
+        </view>
+      </view>
+      <van-empty wx:if="{{logEmpty}}" description="暂无日志记录" image="search" />
+    </view>
+  </block>
+
+  <van-action-sheet
+    show="{{showStageSheet}}"
+    actions="{{stageActions}}"
+    cancel-text="取消"
+    title="选择批次阶段"
+    bind:select="onStageSelect"
+    bind:cancel="onCloseStageSheet"
+    bind:close="onCloseStageSheet"
+  />
+</view>

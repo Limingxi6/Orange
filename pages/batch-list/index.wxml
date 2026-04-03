@@ -1,0 +1,70 @@
+<view class="page">
+  <!-- 顶部搜索栏 -->
+  <van-search
+    value="{{ searchValue }}"
+    placeholder="搜索批次名称、品种..."
+    shape="round"
+    background="#fff"
+    bind:change="onSearchChange"
+  />
+
+  <!-- 加载中 -->
+  <view class="state-loading" wx:if="{{loading}}">
+    <van-loading size="48rpx" vertical>加载中...</van-loading>
+  </view>
+
+  <!-- 加载失败 -->
+  <view class="state-error" wx:elif="{{loadFailed}}">
+    <van-empty description="加载失败，请检查网络">
+      <van-button round type="warning" size="small" color="#FF8C00" bindclick="onRetry" custom-class="retry-btn">重新加载</van-button>
+    </van-empty>
+  </view>
+
+  <!-- 正常列表 -->
+  <block wx:else>
+    <view class="batch-list">
+      <view
+        class="batch-card"
+        wx:for="{{batchList}}"
+        wx:key="id"
+        data-id="{{item.id}}"
+        bindtap="onCardTap"
+      >
+        <view class="batch-header">
+          <text class="batch-name">{{item.name}}</text>
+          <van-tag
+            type="{{item.tagType || 'default'}}"
+            plain
+            round
+          >
+            {{item.status}}
+          </van-tag>
+        </view>
+        <view class="batch-body">
+          <van-cell-group border="{{false}}">
+            <van-cell title="品种" value="{{item.variety}}" border="{{false}}" size="small" />
+            <van-cell title="地块" value="{{item.plotName}}" border="{{false}}" size="small" />
+            <van-cell title="生育阶段" value="{{item.stage}}" border="{{false}}" size="small" />
+            <van-cell title="种植日期" value="{{item.plantDate}}" border="{{false}}" size="small" />
+          </van-cell-group>
+        </view>
+      </view>
+
+      <van-empty wx:if="{{batchList.length === 0}}" description="暂无匹配批次" />
+    </view>
+  </block>
+
+  <!-- 底部新建批次按钮 -->
+  <view class="footer-btn">
+    <van-button
+      type="warning"
+      block
+      round
+      color="#FF8C00"
+      bindclick="onAddBatch"
+      custom-class="add-btn"
+    >
+      <van-icon name="plus" custom-class="btn-icon" /> 新建批次
+    </van-button>
+  </view>
+</view>

@@ -1,0 +1,116 @@
+<view class="page">
+  <!-- ====== 图片选择区 ====== -->
+  <view class="upload-wrapper">
+    <view class="upload-box" wx:if="{{!imagePath}}">
+      <van-uploader
+        file-list="{{ fileList }}"
+        max-count="1"
+        preview-size="100%"
+        accept="image"
+        bind:after-read="onAfterRead"
+        bind:delete="onDeleteImage"
+        upload-icon="photograph"
+        upload-text="点击拍照 / 从相册选择柑橘叶片或果实照片"
+        image-fit="aspectFill"
+      />
+    </view>
+    <view class="preview-box" wx:else>
+      <image class="preview-img" src="{{imagePath}}" mode="aspectFit" />
+      <view class="preview-remove" bindtap="onDeleteImage">
+        <van-icon name="cross" color="#fff" size="28rpx" />
+      </view>
+    </view>
+  </view>
+
+  <!-- ====== 识别按钮 ====== -->
+  <van-button
+    type="warning"
+    block
+    round
+    color="#FF8C00"
+    size="large"
+    loading="{{ recognizing }}"
+    loading-text="AI 识别中..."
+    disabled="{{ !imagePath }}"
+    bind:click="onRecognize"
+    custom-class="action-btn"
+  >
+    <van-icon name="scan" custom-class="btn-icon" />开始识别
+  </van-button>
+
+  <!-- ====== 识别失败提示 ====== -->
+  <view class="fail-tip" wx:if="{{recognizeFailed && !showResult}}">
+    <van-empty image="error" description="识别失败，请检查网络后重试" />
+  </view>
+
+  <!-- ====== 识别结果 ====== -->
+  <view class="result-section" wx:if="{{showResult}}">
+    <van-divider content-position="center" custom-style="margin:40rpx 0 28rpx;color:#999;">
+      识别结果
+    </van-divider>
+
+    <!-- 主结果卡片 -->
+    <view class="result-card">
+      <!-- 标题行 -->
+      <view class="result-head">
+        <text class="result-label">{{result.label}}</text>
+        <van-tag
+          type="{{severityTag}}"
+          size="medium"
+          round
+        >{{result.severity}}风险</van-tag>
+      </view>
+
+      <!-- 指标行 -->
+      <view class="metric-row">
+        <view class="metric-item">
+          <text class="metric-value highlight">{{confidencePercent}}</text>
+          <text class="metric-title">置信度</text>
+        </view>
+        <view class="metric-divider"></view>
+        <view class="metric-item">
+          <text class="metric-value">{{result.severity}}</text>
+          <text class="metric-title">严重程度</text>
+        </view>
+      </view>
+
+      <!-- 建议 -->
+      <view class="advice-box">
+        <van-icon name="bulb-o" color="#FF8C00" size="36rpx" custom-class="advice-icon" />
+        <text class="advice-text">{{result.advice}}</text>
+      </view>
+
+      <!-- 人工复核提示 -->
+      <van-notice-bar
+        wx:if="{{result.needManualReview}}"
+        left-icon="warning-o"
+        text="AI 结果仅供参考，建议人工复核确认"
+        color="#ee0a24"
+        background="#FFF0F0"
+        custom-class="review-bar"
+      />
+    </view>
+
+    <!-- 保存为日志按钮 -->
+    <van-button
+      plain
+      round
+      type="warning"
+      color="{{saved ? '#999' : '#FF8C00'}}"
+      size="large"
+      block
+      loading="{{ saving }}"
+      loading-text="保存中..."
+      disabled="{{ saved }}"
+      bind:click="onSaveLog"
+      custom-class="save-btn"
+      icon="{{saved ? 'passed' : 'notes-o'}}"
+    >{{saved ? '已保存' : '一键保存为农事日志'}}</van-button>
+  </view>
+
+  <!-- ====== 空状态提示 ====== -->
+  <view class="tips" wx:if="{{!showResult && !recognizing && !recognizeFailed}}">
+    <van-icon name="info-o" color="#ccc" size="32rpx" />
+    <text class="tips-text">拍摄或上传柑橘叶片/果实照片，AI 将识别疑似病虫害并给出建议</text>
+  </view>
+</view>

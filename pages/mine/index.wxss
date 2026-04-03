@@ -1,0 +1,117 @@
+.container {
+  padding: 24rpx;
+  padding-bottom: 48rpx;
+}
+
+/* 用户卡片 */
+.user-card {
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 48rpx;
+  margin-bottom: 24rpx;
+  text-align: center;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
+}
+
+.avatar-wrap {
+  position: relative;
+  width: 160rpx;
+  height: 160rpx;
+  margin: 0 auto 24rpx;
+}
+
+.avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: #F5F5F5;
+}
+
+.avatar-placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: #FF8C00;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-text {
+  font-size: 28rpx;
+  color: #fff;
+}
+
+.nickname {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.login-hint {
+  display: block;
+  font-size: 24rpx;
+  color: #999;
+  margin-top: 8rpx;
+}
+
+.phone-text {
+  display: block;
+  font-size: 26rpx;
+  color: #999;
+  margin-top: 8rpx;
+}
+
+/* 功能列表 */
+.menu-list {
+  background: #fff;
+  border-radius: 16rpx;
+  overflow: hidden;
+  margin-bottom: 48rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
+}
+
+.menu-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 32rpx 24rpx;
+  border-bottom: 1rpx solid #F0F0F0;
+}
+
+.menu-item:last-child {
+  border-bottom: none;
+}
+
+.menu-name {
+  font-size: 30rpx;
+  color: #333;
+}
+
+.menu-arrow {
+  font-size: 36rpx;
+  color: #ccc;
+}
+
+/* 退出登录 */
+.logout-wrap {
+  padding: 0 24rpx;
+}
+
+.logout-btn {
+  width: 100%;
+  background: #fff;
+  color: #FF8C00;
+  border: 2rpx solid #FF8C00;
+  border-radius: 12rpx;
+  padding: 28rpx 0;
+  font-size: 30rpx;
+  text-align: center;
+}
+
+.logout-btn::after {
+  border: none;
+}

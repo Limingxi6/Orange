@@ -1,0 +1,84 @@
+<view class="page">
+  <view class="form-card">
+    <view class="field-group">
+      <view class="field-label">批次名称</view>
+      <view class="field-wrap">
+        <van-field
+          value="{{ name }}"
+          placeholder="如：2026春-纽荷尔脐橙A区"
+          border="{{ false }}"
+          bind:change="onFieldChange"
+          data-key="name"
+          maxlength="50"
+        />
+      </view>
+    </view>
+
+    <view class="field-group">
+      <view class="field-label">品种</view>
+      <view class="field-wrap">
+        <van-field
+          value="{{ variety }}"
+          placeholder="如：纽荷尔脐橙"
+          border="{{ false }}"
+          bind:change="onFieldChange"
+          data-key="variety"
+          maxlength="30"
+        />
+      </view>
+    </view>
+
+    <view class="field-group">
+      <view class="field-label">地块</view>
+      <view class="field-wrap">
+        <van-field
+          value="{{ plotName }}"
+          placeholder="如：东区3号地"
+          border="{{ false }}"
+          bind:change="onFieldChange"
+          data-key="plotName"
+          maxlength="30"
+        />
+      </view>
+    </view>
+
+    <view class="field-group">
+      <view class="field-label">面积（亩）</view>
+      <view class="field-wrap">
+        <van-field
+          value="{{ area }}"
+          type="digit"
+          placeholder="请输入面积"
+          border="{{ false }}"
+          bind:change="onFieldChange"
+          data-key="area"
+        />
+      </view>
+    </view>
+
+    <view class="field-group">
+      <view class="field-label">种植日期</view>
+      <picker mode="date" value="{{ plantDate }}" start="2020-01-01" end="2030-12-31" bindchange="onDateChange">
+        <view class="field-wrap date-field">
+          <text class="{{ plantDate ? 'date-value' : 'date-placeholder' }}">{{ plantDate || '请选择种植日期' }}</text>
+          <van-icon name="arrow" color="#999" size="16px" />
+        </view>
+      </picker>
+    </view>
+
+    <van-button
+      type="warning"
+      block
+      round
+      color="#FF8C00"
+      loading="{{ submitting }}"
+      disabled="{{ submitting }}"
+      bind:click="onSubmit"
+      custom-class="submit-btn"
+    >
+      提交
+    </van-button>
+  </view>
+</view>
+
+<van-toast id="van-toast" />

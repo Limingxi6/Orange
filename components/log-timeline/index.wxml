@@ -1,0 +1,39 @@
+<view class="log-timeline">
+  <block wx:for="{{list}}" wx:key="id">
+    <view class="timeline-item" data-index="{{index}}" bindtap="onItemTap">
+      <!-- 左侧节点 -->
+      <view class="timeline-node">
+        <view class="node-dot"></view>
+        <view class="node-line" wx:if="{{index < list.length - 1}}"></view>
+      </view>
+      <!-- 右侧内容卡片 -->
+      <view class="timeline-content">
+        <view class="log-header">
+          <text class="log-type" wx:if="{{item.type || item.typeText}}">{{item.typeText || item.type}}</text>
+          <text class="log-time">{{item.time}}</text>
+        </view>
+        <text class="log-content" wx:if="{{item.content}}">{{item.content}}</text>
+        <view class="log-images" wx:if="{{item.images && item.images.length > 0}}">
+          <image
+            wx:for="{{item.images}}"
+            wx:for-item="img"
+            wx:key="*this"
+            class="log-image"
+            src="{{img}}"
+            mode="aspectFill"
+            data-current="{{img}}"
+            data-urls="{{item.images}}"
+            catchtap="onImagePreview"
+          />
+        </view>
+        <view class="log-footer" wx:if="{{item.operator}}">
+          <text class="log-operator">{{item.operator}}</text>
+        </view>
+      </view>
+    </view>
+  </block>
+
+  <view class="timeline-empty" wx:if="{{list.length === 0}}">
+    <text>暂无农事日志</text>
+  </view>
+</view>

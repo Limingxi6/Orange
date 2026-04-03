@@ -1,0 +1,15 @@
+<view class="risk-card {{levelClass}}">
+  <view class="risk-header">
+    <text class="risk-level">风险等级：{{level}}</text>
+  </view>
+  <view class="risk-body">
+    <view class="risk-item" wx:if="{{reason}}">
+      <text class="risk-label">风险原因：</text>
+      <text class="risk-value">{{reason}}</text>
+    </view>
+    <view class="risk-item" wx:if="{{suggestion}}">
+      <text class="risk-label">建议：</text>
+      <text class="risk-value">{{suggestion}}</text>
+    </view>
+  </view>
+</view>

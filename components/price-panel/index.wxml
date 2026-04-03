@@ -1,0 +1,55 @@
+<view class="price-panel">
+  <!-- 品类 + 等级 -->
+  <view class="panel-header">
+    <view class="header-left">
+      <text class="grade-value">{{grade || '--'}}</text>
+      <text class="variety-text" wx:if="{{variety}}">{{variety}}</text>
+    </view>
+  </view>
+
+  <!-- 建议零售价 -->
+  <view class="price-block">
+    <text class="price-label">建议零售价</text>
+    <view class="price-row">
+      <text class="price-num">{{minPrice}}</text>
+      <text class="price-unit"> 元/斤</text>
+      <text class="price-sep"> ~ </text>
+      <text class="price-num">{{maxPrice}}</text>
+      <text class="price-unit"> 元/斤</text>
+    </view>
+  </view>
+
+  <!-- 建议批发价 -->
+  <view class="price-block" wx:if="{{wholesaleMin > 0}}">
+    <text class="price-label">建议批发价</text>
+    <view class="price-row">
+      <text class="price-num wholesale">{{wholesaleMin}}</text>
+      <text class="price-unit"> 元/斤</text>
+      <text class="price-sep"> ~ </text>
+      <text class="price-num wholesale">{{wholesaleMax}}</text>
+      <text class="price-unit"> 元/斤</text>
+    </view>
+  </view>
+
+  <!-- 定价理由 -->
+  <view class="reason-block" wx:if="{{reason}}">
+    <text class="block-label">定价理由</text>
+    <text class="block-text">{{reason}}</text>
+  </view>
+
+  <!-- 定价因素 -->
+  <view class="factors-block" wx:if="{{factorList.length > 0}}">
+    <text class="block-label">定价因素</text>
+    <view class="factors-list">
+      <view class="factor-item" wx:for="{{factorList}}" wx:key="index">
+        <text class="factor-name">{{item.name}}</text>
+        <text class="factor-val">{{item.value}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 风险提示 -->
+  <view class="risk-block" wx:if="{{riskWarning}}">
+    <text class="risk-text">⚠ {{riskWarning}}</text>
+  </view>
+</view>
