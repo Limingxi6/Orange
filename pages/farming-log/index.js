@@ -1,4 +1,6 @@
 const logService = require('../../services/log')
+const PENDING_BATCH_KEY = 'pendingFarmingLogBatchId'
+const RECENT_BATCH_KEY = 'recentBatchId'
 
 Page({
   data: {
@@ -15,23 +17,41 @@ Page({
   },
 
   onLoad(options) {
-    const batchId = options.batchId || ''
+    const batchId = this._resolveBatchId(options)
     if (!batchId) {
       this.setData({ loading: false, noBatchId: true })
       return
     }
-    this.setData({ batchId })
     this.fetchData(batchId)
   },
 
+  onShow() {
+    const pendingBatchId = this._consumePendingBatchId()
+    if (!pendingBatchId) return
+    if (String(pendingBatchId) === String(this.data.batchId) && !this.data.noBatchId) {
+      this.fetchData(this.data.batchId)
+      return
+    }
+    this.fetchData(pendingBatchId)
+  },
+
   async fetchData(batchId) {
+    const targetBatchId = batchId || this.data.batchId
+    if (!targetBatchId) {
+      this.setData({ loading: false, noBatchId: true, loadFailed: false })
+      return
+    }
+
+    this._rememberBatchId(targetBatchId)
     this.setData({ loading: true, loadFailed: false })
     try {
       const [types, logs] = await Promise.all([
         logService.getTypes(),
-        logService.getListByBatch(batchId)
+        logService.getListByBatch(targetBatchId)
       ])
       this.setData({
+        batchId: String(targetBatchId),
+        noBatchId: false,
         filterTabs: types,
         logs: logs || [],
         loading: false
@@ -76,10 +96,63 @@ Page({
     this.setData({ showDetail: false })
   },
 
+  onGoBatchList() {
+    wx.switchTab({ url: '/pages/batch-list/index' })
+  },
+
+  onGoBack() {
+    const pages = getCurrentPages()
+    if (pages.length > 1) {
+      wx.navigateBack()
+      return
+    }
+    wx.switchTab({ url: '/pages/home/index' })
+  },
+
   /* ---------- 新增日志 ---------- */
   onAddLog() {
     wx.navigateTo({
       url: '/pages/farming-log-create/index?batchId=' + this.data.batchId
     })
+  },
+
+  _resolveBatchId(options = {}) {
+    const fromOptions = options.batchId || options.id || ''
+    if (fromOptions) return String(fromOptions)
+
+    const pending = this._consumePendingBatchId()
+    if (pending) return String(pending)
+
+    const app = getApp()
+    const fromGlobal = app && app.globalData ? app.globalData.recentBatchId : ''
+    if (fromGlobal) return String(fromGlobal)
+
+    const fromStorage = wx.getStorageSync(RECENT_BATCH_KEY)
+    return fromStorage ? String(fromStorage) : ''
+  },
+
+  _consumePendingBatchId() {
+    const app = getApp()
+    const fromGlobal = app && app.globalData ? app.globalData.pendingFarmingLogBatchId : ''
+    if (fromGlobal) {
+      app.globalData.pendingFarmingLogBatchId = ''
+      return String(fromGlobal)
+    }
+
+    const fromStorage = wx.getStorageSync(PENDING_BATCH_KEY)
+    if (fromStorage) {
+      wx.removeStorageSync(PENDING_BATCH_KEY)
+      return String(fromStorage)
+    }
+    return ''
+  },
+
+  _rememberBatchId(batchId) {
+    const id = String(batchId)
+    const app = getApp()
+    if (app && app.globalData) {
+      app.globalData.recentBatchId = id
+    }
+    wx.setStorageSync(RECENT_BATCH_KEY, id)
   }
 })

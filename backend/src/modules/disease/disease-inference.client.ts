@@ -1,7 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+﻿import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { BusinessException } from '../../common/exceptions/business.exception';
-import { ErrorCode } from '../../common/constants/error-code.enum';
+import { mockRecognizeDisease } from './mock-disease-recognizer';
 
 type Severity = 'low' | 'mid' | 'high';
 
@@ -12,6 +11,10 @@ export type DiseaseInferenceResult = {
   suggestion: string;
   modelVersion: string;
   boxes: unknown[];
+  needManualReview?: boolean;
+  advice?: string;
+  reasoning?: string;
+  severityText?: string;
 };
 
 type InferenceApiResponse =
@@ -24,6 +27,10 @@ type InferenceApiResponse =
       suggestion?: string;
       modelVersion?: string;
       boxes?: unknown[];
+      needManualReview?: boolean;
+      advice?: string;
+      reasoning?: string;
+      severityText?: string;
     };
 
 @Injectable()
@@ -33,16 +40,25 @@ export class DiseaseInferenceClient {
   constructor(private readonly configService: ConfigService) {}
 
   async infer(imageUrl: string, batchId: number): Promise<DiseaseInferenceResult> {
-    const baseUrl = this.configService.get<string>('diseaseInference.baseUrl');
+    const enableAiMock = this.configService.get<boolean>('aiService.enableMock', false);
+    const baseUrl =
+      this.configService.get<string>('diseaseInference.baseUrl') ||
+      this.configService.get<string>('aiService.url');
     const path = this.configService.get<string>('diseaseInference.predictPath', '/predict');
-    const timeoutMs = this.configService.get<number>('diseaseInference.timeoutMs', 15000);
+    const timeoutMs =
+      this.configService.get<number>('diseaseInference.timeoutMs') ||
+      this.configService.get<number>('aiService.timeoutMs', 15000);
     const apiKey = this.configService.get<string>('diseaseInference.apiKey');
+    const modelPath = this.configService.get<string>('aiService.modelPath');
+
+    if (enableAiMock) {
+      this.logger.warn('ENABLE_AI_MOCK=true, fallback to local rule inference');
+      return this.inferWithLocalRule(imageUrl);
+    }
 
     if (!baseUrl) {
-      throw new BusinessException(
-        ErrorCode.OPERATION_FAILED,
-        'AI 推理服务未配置（缺少 DISEASE_AI_BASE_URL）',
-      );
+      this.logger.warn('AI inference base url is not configured, fallback to local rule inference');
+      return this.inferWithLocalRule(imageUrl);
     }
 
     const endpoint = `${baseUrl.replace(/\/$/, '')}${path.startsWith('/') ? path : `/${path}`}`;
@@ -56,46 +72,37 @@ export class DiseaseInferenceClient {
           'Content-Type': 'application/json',
           ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
         },
-        body: JSON.stringify({ imageUrl, batchId }),
+        body: JSON.stringify({ imageUrl, batchId, modelPath }),
         signal: controller.signal,
       });
 
       if (!response.ok) {
         const errorBody = await response.text().catch(() => '');
-        this.logger.error(
-          `AI 推理服务返回非 2xx 状态: ${response.status}, body: ${errorBody || '<empty>'}`,
+        this.logger.warn(
+          `Disease inference HTTP failed, status=${response.status}, body=${errorBody || '<empty>'}`,
         );
-        throw new BusinessException(
-          ErrorCode.OPERATION_FAILED,
-          `AI 推理服务调用失败（HTTP ${response.status}）`,
-        );
+        return this.inferWithLocalRule(imageUrl);
       }
 
       const payload = (await response.json()) as InferenceApiResponse;
       const normalized = this.normalizeResponse(payload);
 
       if (!normalized) {
-        this.logger.error(`AI 推理服务返回结构不完整: ${JSON.stringify(payload)}`);
-        throw new BusinessException(ErrorCode.OPERATION_FAILED, 'AI 推理结果格式不合法');
+        this.logger.warn('Disease inference response shape invalid, fallback to local rule inference');
+        return this.inferWithLocalRule(imageUrl);
       }
 
       return normalized;
     } catch (error) {
-      if (error instanceof BusinessException) {
-        throw error;
-      }
-
       const reason = error instanceof Error ? error.message : String(error);
-      this.logger.error(`AI 推理服务请求异常: ${reason}`);
-      throw new BusinessException(ErrorCode.OPERATION_FAILED, `AI 推理服务不可用: ${reason}`);
+      this.logger.warn(`Disease inference request error: ${reason}; fallback to local rule inference`);
+      return this.inferWithLocalRule(imageUrl);
     } finally {
       clearTimeout(timeout);
     }
   }
 
-  private normalizeResponse(
-    payload: InferenceApiResponse,
-  ): DiseaseInferenceResult | null {
+  private normalizeResponse(payload: InferenceApiResponse): DiseaseInferenceResult | null {
     const source = 'data' in payload && payload.data ? payload.data : payload;
 
     const diseaseName = source.diseaseName;
@@ -104,6 +111,10 @@ export class DiseaseInferenceClient {
     const suggestion = source.suggestion;
     const modelVersion = source.modelVersion;
     const boxes = source.boxes;
+    const needManualReview = source.needManualReview;
+    const advice = source.advice;
+    const reasoning = source.reasoning;
+    const severityText = source.severityText;
 
     if (
       typeof diseaseName !== 'string' ||
@@ -123,6 +134,26 @@ export class DiseaseInferenceClient {
       suggestion,
       modelVersion,
       boxes,
+      needManualReview: typeof needManualReview === 'boolean' ? needManualReview : undefined,
+      advice: typeof advice === 'string' ? advice : undefined,
+      reasoning: typeof reasoning === 'string' ? reasoning : undefined,
+      severityText: typeof severityText === 'string' ? severityText : undefined,
+    };
+  }
+
+  private inferWithLocalRule(imageUrl: string): DiseaseInferenceResult {
+    const last = imageUrl.split('/').pop();
+    const filename = (last && last.trim()) || `batch-${Date.now()}`;
+    const local = mockRecognizeDisease(filename);
+
+    return {
+      diseaseName: local.diseaseName,
+      confidence: local.confidence,
+      severity: local.severity,
+      suggestion: local.suggestion,
+      modelVersion: 'rule-local-v1',
+      boxes: [],
+      needManualReview: local.severity === 'high',
     };
   }
 }

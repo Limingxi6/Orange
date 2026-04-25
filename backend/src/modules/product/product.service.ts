@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+﻿import { Injectable, Logger } from '@nestjs/common';
 import { Prisma, ProductStatus } from '@prisma/client';
 import * as QRCode from 'qrcode';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -6,13 +6,24 @@ import { BusinessException } from '../../common/exceptions/business.exception';
 import { ErrorCode } from '../../common/constants/error-code.enum';
 import { QueryProductDto } from './dto/query-product.dto';
 import { GenerateProductQrcodeDto } from './dto/generate-product-qrcode.dto';
-import { createContentHash } from '../trace/utils/hash.util';
+import { WechatMiniCodeService } from './wechat-mini-code.service';
+import { TraceService } from '../trace/trace.service';
 
 @Injectable()
 export class ProductService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(ProductService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly wechatMiniCodeService: WechatMiniCodeService,
+    private readonly traceService: TraceService,
+  ) {}
 
   async getList(query: QueryProductDto) {
+    await this.ensureDefaultProductsForBatches(
+      query.batchId && Number.isFinite(query.batchId) ? [query.batchId] : undefined,
+    );
+
     const page = query.page ?? 1;
     const pageSize = query.pageSize ?? query.limit ?? 10;
     const skip = (page - 1) * pageSize;
@@ -82,7 +93,6 @@ export class ProductService {
         qrCodeUrl: item.qrCodeUrl,
         status: item.status,
         createdAt: item.createdAt,
-        // 兼容前端旧字段（services/product.js mock 结构）
         batchName: item.batch.batchNo,
         variety: item.batch.variety,
         qrcodeGenerated: Boolean(item.qrCodeUrl),
@@ -111,13 +121,9 @@ export class ProductService {
     const traceCode =
       dto.traceCode?.trim() ||
       `P${product.id}-B${product.batchId}-${Date.now().toString(36).toUpperCase()}`;
-    const qrPayload = dto.traceCode?.trim() || traceLink;
 
-    const qrcodeBase64 = await QRCode.toDataURL(qrPayload, {
-      errorCorrectionLevel: 'M',
-      margin: 1,
-      width: 320,
-    });
+    const miniProgramEnabled = this.wechatMiniCodeService.isEnabled();
+    const qrResult = await this.buildQrcodeImage(traceCode, traceLink, miniProgramEnabled);
 
     await this.prisma.product.update({
       where: { id },
@@ -126,43 +132,8 @@ export class ProductService {
       },
     });
 
-    // 与 trace 模块联动：保证产品至少有一条可用溯源记录
-    const existingTrace = await this.prisma.traceRecord.findFirst({
-      where: { productId: product.id },
-      orderBy: { createdAt: 'desc' },
-      select: { id: true },
-    });
-    const placeholderPayload = {
-      traceCode,
-      productId: product.id,
-      batchSnapshot: { batchId: product.batchId },
-      logsSnapshot: [],
-      inspectionsSnapshot: [],
-    };
-    const chainHash = createContentHash(placeholderPayload);
-
-    if (existingTrace) {
-      await this.prisma.traceRecord.update({
-        where: { id: existingTrace.id },
-        data: {
-          traceCode,
-          chainHash,
-          verified: true,
-        },
-      });
-    } else {
-      await this.prisma.traceRecord.create({
-        data: {
-          productId: product.id,
-          traceCode,
-          batchSnapshot: { batchId: product.batchId },
-          logsSnapshot: [],
-          inspectionsSnapshot: [],
-          chainHash,
-          verified: true,
-        },
-      });
-    }
+    // 统一复用 TraceService 生成/更新快照与 proof，避免 hash 与 snapshot 不一致导致验真失败。
+    await this.traceService.createOrUpdateForProduct(product.id, traceCode);
 
     return {
       id: product.id,
@@ -170,7 +141,93 @@ export class ProductService {
       productName: product.productName,
       traceCode,
       qrCodeUrl: traceLink,
-      qrcodeBase64,
+      qrcodeBase64: qrResult.qrcodeBase64,
+      qrcodeType: qrResult.qrcodeType,
+      qrcodeFallback: qrResult.qrcodeType === 'normal' && miniProgramEnabled,
+      qrcodeFallbackReason: qrResult.qrcodeFallbackReason ?? null,
     };
+  }
+
+  private async buildQrcodeImage(
+    traceCode: string,
+    traceLink: string,
+    miniProgramEnabled: boolean,
+  ): Promise<{
+    qrcodeBase64: string;
+    qrcodeType: 'mini_program' | 'normal';
+    qrcodeFallbackReason?: string;
+  }> {
+    let fallbackReason: string | undefined;
+
+    if (miniProgramEnabled) {
+      try {
+        const miniCode = await this.wechatMiniCodeService.generateMiniProgramCode(traceCode);
+        return {
+          qrcodeBase64: miniCode.dataUri,
+          qrcodeType: 'mini_program',
+        };
+      } catch (error) {
+        fallbackReason = this.toSafeErrorMessage(error);
+        this.logger.warn(
+          `Generate mini program code failed traceCode=${traceCode}, fallback to normal qrcode, reason=${fallbackReason}`,
+        );
+      }
+    }
+
+    const qrPayload = traceCode || traceLink;
+    const qrcodeBase64 = await QRCode.toDataURL(qrPayload, {
+      errorCorrectionLevel: 'M',
+      margin: 1,
+      width: 320,
+    });
+
+    return {
+      qrcodeBase64,
+      qrcodeType: 'normal',
+      ...(fallbackReason ? { qrcodeFallbackReason: fallbackReason } : {}),
+    };
+  }
+
+  private toSafeErrorMessage(error: unknown): string {
+    if (error instanceof Error) {
+      return error.message;
+    }
+    return String(error);
+  }
+
+  private async ensureDefaultProductsForBatches(batchIds?: number[]) {
+    const where: Prisma.BatchWhereInput = {
+      ...(batchIds && batchIds.length > 0 ? { id: { in: batchIds } } : {}),
+      products: { none: {} },
+    };
+
+    const batchesWithoutProducts = await this.prisma.batch.findMany({
+      where,
+      select: {
+        id: true,
+        batchNo: true,
+      },
+      take: 500,
+    });
+
+    if (batchesWithoutProducts.length === 0) {
+      return;
+    }
+
+    const defaultProducts = batchesWithoutProducts.map((batch) => ({
+      batchId: batch.id,
+      productName: `${batch.batchNo} 产品`,
+      status: ProductStatus.pending,
+    }));
+
+    try {
+      await this.prisma.product.createMany({
+        data: defaultProducts,
+      });
+      this.logger.log(`Auto-created default products for ${defaultProducts.length} batch(es)`);
+    } catch (error) {
+      const reason = this.toSafeErrorMessage(error);
+      this.logger.warn(`Auto-create default products failed: ${reason}`);
+    }
   }
 }

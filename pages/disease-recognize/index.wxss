@@ -175,3 +175,39 @@
   margin-left: 12rpx;
   line-height: 1.6;
 }
+
+.ai-suggestion-box {
+  margin-bottom: 20rpx;
+  padding: 22rpx;
+  background: #F9FAFB;
+  border-radius: 14rpx;
+  border: 1rpx solid #E5E7EB;
+}
+
+.ai-suggestion-title {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8rpx;
+}
+
+.ai-suggestion-summary {
+  display: block;
+  font-size: 26rpx;
+  color: #444;
+  line-height: 1.6;
+}
+
+.ai-suggestion-action {
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: #555;
+  line-height: 1.6;
+}
+
+.ai-suggestion-risk {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: #8A6D3B;
+}

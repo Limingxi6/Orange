@@ -54,6 +54,7 @@
         icon="{{item.vantIcon}}"
         text="{{item.name}}"
         icon-color="#FF8C00"
+        data-id="{{item.id}}"
         data-path="{{item.path}}"
         bindclick="onQuickFunctionTap"
       />
@@ -75,7 +76,7 @@
         wx:for="{{recentBatches}}"
         wx:key="id"
         title="{{item.name}}"
-        label="{{item.plantDate}}"
+        label="{{item.date || item.plantDate}}"
         is-link
         data-id="{{item.id}}"
         bindclick="onBatchTap"

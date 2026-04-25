@@ -10,19 +10,19 @@
       <view class="timeline-content">
         <view class="log-header">
           <text class="log-type" wx:if="{{item.type || item.typeText}}">{{item.typeText || item.type}}</text>
-          <text class="log-time">{{item.time}}</text>
+          <text class="log-time">{{item.displayTime || item.time}}</text>
         </view>
-        <text class="log-content" wx:if="{{item.content}}">{{item.content}}</text>
-        <view class="log-images" wx:if="{{item.images && item.images.length > 0}}">
+        <text class="log-content" wx:if="{{item.displayContent || item.content}}">{{item.displayContent || item.content}}</text>
+        <view class="log-images" wx:if="{{item.displayImages.length > 0}}">
           <image
-            wx:for="{{item.images}}"
+            wx:for="{{item.displayImages}}"
             wx:for-item="img"
             wx:key="*this"
             class="log-image"
             src="{{img}}"
             mode="aspectFill"
             data-current="{{img}}"
-            data-urls="{{item.images}}"
+            data-urls="{{item.displayImages}}"
             catchtap="onImagePreview"
           />
         </view>

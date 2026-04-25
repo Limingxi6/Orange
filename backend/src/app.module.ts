@@ -30,6 +30,7 @@ import { ProductModule } from './modules/product/product.module';
 import { TraceModule } from './modules/trace/trace.module';
 import { WeatherModule } from './modules/weather/weather.module';
 import { UserModule } from './modules/user/user.module';
+import { AiModule } from './modules/ai/ai.module';
 // import { UploadModule } from './modules/upload/upload.module';
 
 @Module({
@@ -76,6 +77,7 @@ import { UserModule } from './modules/user/user.module';
     TraceModule,
     WeatherModule,
     UserModule,
+    AiModule,
     // UploadModule,
   ],
   providers: [

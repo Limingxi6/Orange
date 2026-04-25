@@ -2,6 +2,9 @@ const logService = require('../../services/log')
 const batchService = require('../../services/batch')
 const { uploadImage } = require('../../services/upload')
 
+const PENDING_BATCH_KEY = 'pendingFarmingLogBatchId'
+const RECENT_BATCH_KEY = 'recentBatchId'
+
 Page({
   data: {
     batches: [],
@@ -121,14 +124,29 @@ Page({
         source: 'manual'
       })
 
+      const app = getApp()
+      if (app && app.globalData) {
+        app.globalData.pendingFarmingLogBatchId = batchId
+        app.globalData.recentBatchId = batchId
+      }
+      wx.setStorageSync(PENDING_BATCH_KEY, batchId)
+      wx.setStorageSync(RECENT_BATCH_KEY, batchId)
+
       wx.showToast({ title: '提交成功', icon: 'success' })
       setTimeout(() => {
         const pages = getCurrentPages()
         const prevPage = pages[pages.length - 2]
-        if (prevPage && prevPage.fetchData) {
+        if (prevPage && typeof prevPage.fetchData === 'function') {
           prevPage.fetchData(batchId)
+          wx.navigateBack()
+          return
         }
-        wx.navigateBack()
+        wx.redirectTo({
+          url: `/pages/farming-log/index?batchId=${batchId}`,
+          fail: () => {
+            wx.navigateTo({ url: `/pages/batch-detail/index?id=${batchId}` })
+          }
+        })
       }, 800)
     } catch (err) {
       if (!err._toasted) {

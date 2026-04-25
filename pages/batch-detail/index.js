@@ -1,5 +1,6 @@
 const batchService = require('../../services/batch')
 const logService = require('../../services/log')
+const RECENT_BATCH_KEY = 'recentBatchId'
 
 const STATUS_CLASS_MAP = { '种植中': 'planting', '已采收': 'harvested' }
 
@@ -34,6 +35,7 @@ Page({
       return
     }
     this.setData({ batchId: id })
+    this._rememberBatchId(id)
     this.fetchData(id)
   },
 
@@ -106,5 +108,14 @@ Page({
     } finally {
       this.setData({ stageUpdating: false })
     }
+  },
+
+  _rememberBatchId(batchId) {
+    const id = String(batchId)
+    const app = getApp()
+    if (app && app.globalData) {
+      app.globalData.recentBatchId = id
+    }
+    wx.setStorageSync(RECENT_BATCH_KEY, id)
   }
 })

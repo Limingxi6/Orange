@@ -94,6 +94,7 @@ model Batch {
   diseaseRecords DiseaseRecord[]
   riskRecords   RiskRecord[]
   products      Product[]
+  fruitGradeRecords FruitGradeRecord[]
 
   @@unique([batchNo])
   @@index([managerId])
@@ -214,8 +215,20 @@ model TraceRecord {
   batchSnapshot        Json     @map("batch_snapshot")
   logsSnapshot         Json     @map("logs_snapshot")
   inspectionsSnapshot  Json     @map("inspections_snapshot")
-  chainHash            String   @map("chain_hash") @db.VarChar(128)
+  proofType            String   @default("hash") @map("proof_type") @db.VarChar(32)
+  proofHash            String?  @map("proof_hash") @db.VarChar(128) // canonical local hash proof
+  snapshotVersion      Int      @default(1) @map("snapshot_version")
+  chainHash            String   @map("chain_hash") @db.VarChar(128) // legacy alias, equals proofHash in hash mode
   verified             Boolean  @default(false)
+  verifiedAt           DateTime? @map("verified_at")
+  verifyMessage        String?  @map("verify_message") @db.VarChar(255)
+  generatedAt          DateTime? @map("generated_at")
+  anchorStatus         String?  @map("anchor_status") @db.VarChar(32)
+  txId                 String?  @map("tx_id") @db.VarChar(191)
+  blockNumber          String?  @map("block_number") @db.VarChar(64)
+  chainProvider        String?  @map("chain_provider") @db.VarChar(80)
+  chainNetwork         String?  @map("chain_network") @db.VarChar(80)
+  anchoredAt           DateTime? @map("anchored_at")
   createdAt            DateTime @default(now()) @map("created_at")
   updatedAt            DateTime @updatedAt @map("updated_at")
 
@@ -224,6 +237,48 @@ model TraceRecord {
   @@index([productId, createdAt])
   @@unique([traceCode])
   @@map("trace_records")
+}
+
+model FruitGradeRecord {
+  id                 Int      @id @default(autoincrement())
+  requestId          String   @unique @map("request_id") @db.VarChar(64)
+  batchId            Int?     @map("batch_id")
+  imageUrl           String?  @map("image_url") @db.VarChar(500)
+  channel            String?  @db.VarChar(40)
+  packageType        String?  @map("package_type") @db.VarChar(40)
+  region             String?  @db.VarChar(80)
+  diameter           Float?
+  brix               Float?
+  weight             Float?
+  defectLevel        String?  @map("defect_level") @db.VarChar(20)
+  colorScore         Float    @map("color_score")
+  defectRatio        Float    @map("defect_ratio")
+  sizeScore          Float    @map("size_score")
+  maturityScore      Float    @map("maturity_score")
+  detectedDiameter   Float?   @map("detected_diameter")
+  confidence         Float?
+  gradeCode          String   @map("grade_code") @db.VarChar(10)
+  gradeText          String   @map("grade_text") @db.VarChar(40)
+  retailMinPrice     Float    @map("retail_min_price")
+  retailMaxPrice     Float    @map("retail_max_price")
+  wholesaleMinPrice  Float    @map("wholesale_min_price")
+  wholesaleMaxPrice  Float    @map("wholesale_max_price")
+  finalPrice         Float    @map("final_price")
+  engineSource       String   @map("engine_source") @db.VarChar(40)
+  decisionSource     String   @map("decision_source") @db.VarChar(40)
+  modelVersion       String?  @map("model_version") @db.VarChar(80)
+  reason             String?  @db.Text
+  riskWarning        String?  @map("risk_warning") @db.Text
+  factors            Json?
+  rawResult          Json?    @map("raw_result")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  batch Batch? @relation(fields: [batchId], references: [id])
+
+  @@index([batchId, createdAt])
+  @@index([engineSource, modelVersion])
+  @@map("fruit_grade_records")
 }
 
 // =========================

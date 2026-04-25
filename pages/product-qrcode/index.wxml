@@ -1,66 +1,77 @@
 <view class="container">
   <view class="page-header">
     <text class="page-title">我的产品</text>
-    <text class="page-desc">管理已分级产品，生成溯源二维码</text>
+    <text class="page-desc">为每个批次生成唯一溯源码，支持买家扫码直达溯源详情</text>
   </view>
 
-  <!-- 加载中 -->
+  <view class="scan-entry">
+    <view class="scan-copy">
+      <text class="scan-title">扫码查溯源</text>
+      <text class="scan-desc">扫描包装二维码，直接查看该批次详情与验真信息</text>
+    </view>
+    <view class="scan-btn {{scanning ? 'disabled' : ''}}" bindtap="onScanTraceCode">
+      <text>{{scanning ? '扫码中...' : '立即扫码'}}</text>
+    </view>
+  </view>
+
   <view class="state-loading" wx:if="{{loading}}">
     <van-loading size="48rpx" vertical>加载中...</van-loading>
   </view>
 
-  <!-- 加载失败 -->
   <view class="state-error" wx:elif="{{loadFailed}}">
-    <van-empty description="加载失败，请检查网络">
-      <van-button round type="warning" size="small" color="#FF8C00" bindclick="onRetry" custom-class="retry-btn">重新加载</van-button>
+    <van-empty description="加载失败，请检查网络后重试">
+      <van-button round type="warning" size="small" color="#FF8C00" bindtap="onRetry" custom-class="retry-btn">重新加载</van-button>
     </van-empty>
   </view>
 
-  <!-- 正常内容 -->
   <block wx:else>
-    <!-- 空态 -->
     <van-empty wx:if="{{products.length === 0}}" description="暂无产品，请先完成果实分级" />
 
-    <!-- 产品卡片列表 -->
     <view class="product-card" wx:for="{{products}}" wx:key="id">
       <view class="product-header">
         <view class="product-info">
-          <text class="product-name">{{item.batchName}}</text>
-          <text class="product-variety">{{item.variety}}</text>
+          <text class="product-name">{{item.batchName || '--'}}</text>
+          <text class="product-variety">{{item.variety || '--'}}</text>
         </view>
         <view class="status-tag {{item.status === '已上架' ? 'tag-success' : 'tag-pending'}}">
-          {{item.status}}
+          {{item.status || '--'}}
         </view>
       </view>
 
       <view class="product-detail">
         <view class="detail-row">
           <text class="detail-label">果实等级</text>
-          <text class="detail-value">{{item.grade}}</text>
+          <text class="detail-value">{{item.grade || '--'}}</text>
         </view>
         <view class="detail-row">
           <text class="detail-label">建议售价</text>
-          <text class="detail-value price">{{item.price}}</text>
+          <text class="detail-value price">{{item.price || '--'}}</text>
+        </view>
+        <view class="detail-row">
+          <text class="detail-label">溯源码</text>
+          <view class="detail-code-wrap">
+            <text class="detail-value code">{{item.traceCode || '未生成'}}</text>
+            <text
+              class="copy-inline {{!item.traceCode ? 'disabled' : ''}}"
+              bindtap="onCopyTraceCode"
+              data-code="{{item.traceCode}}"
+            >复制</text>
+          </view>
         </view>
       </view>
 
       <view class="product-actions">
-        <view
-          class="action-btn {{generatingId === item.id ? 'disabled' : ''}}"
-          wx:if="{{!item.qrcodeGenerated}}"
-          bindtap="onGenerateQrcode"
-          data-id="{{item.id}}"
-        >
-          <text>{{generatingId === item.id ? '生成中...' : '生成二维码'}}</text>
+        <view class="action-btn {{generatingId === item.id ? 'disabled' : ''}}" bindtap="onGenerateQrcode" data-id="{{item.id}}">
+          <text>{{generatingId === item.id ? '生成中...' : (item.qrcodeGenerated ? '重新生成溯源码' : '生成溯源码')}}</text>
         </view>
-        <view class="action-btn primary" wx:if="{{item.qrcodeGenerated}}" bindtap="onViewQrcode" data-id="{{item.id}}">
-          <text>查看二维码</text>
+        <view class="action-btn {{(!item.qrcodeGenerated || !item.hasQrcodeImage) ? 'disabled' : ''}}" bindtap="onViewQrcode" data-id="{{item.id}}">
+          <text>预览二维码</text>
         </view>
-        <view class="action-btn" bindtap="onViewTrace" data-id="{{item.id}}">
-          <text>溯源预览</text>
+        <view class="action-btn {{(!item.qrcodeGenerated || !item.hasQrcodeImage || savingId === item.id) ? 'disabled' : ''}}" bindtap="onSaveQrcode" data-id="{{item.id}}">
+          <text>{{savingId === item.id ? '保存中...' : '保存二维码'}}</text>
         </view>
-        <view class="action-btn" bindtap="onShareProduct" data-id="{{item.id}}">
-          <text>分享</text>
+        <view class="action-btn primary {{!item.traceCode ? 'disabled' : ''}}" bindtap="onViewTrace" data-id="{{item.id}}">
+          <text>查看溯源详情</text>
         </view>
       </view>
     </view>

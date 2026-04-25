@@ -1,4 +1,4 @@
-import {
+﻿import {
   CHANNEL_COEFF,
   DEFAULT_CHANNEL,
   DEFAULT_PACKAGE,
@@ -10,11 +10,22 @@ export type GradeInput = {
   diameter?: number;
   brix?: number;
   defectLevel?: 'low' | 'mid' | 'high';
+  colorScore?: number;
+  sizeScore?: number;
+  maturityScore?: number;
+  defectRatio?: number;
 };
 
 export type GradeResult = {
   grade: 'A' | 'B' | 'C';
   basePrice: number;
+  qualityScore: number;
+  factors: {
+    colorScore: number;
+    sizeScore: number;
+    maturityScore: number;
+    defectRatio: number;
+  };
 };
 
 export type PriceResult = {
@@ -27,24 +38,67 @@ export type PriceResult = {
   suggestion: string;
 };
 
-/**
- * 分级规则：
- * - A: diameter>=75 且 brix>=12 且 defect=low
- * - B: diameter>=68 且 brix>=10 且 defect!=high
- * - 其他 C
- */
-export function determineGrade(input: GradeInput): GradeResult {
-  const diameter = input.diameter ?? 0;
-  const brix = input.brix ?? 0;
-  const defect = input.defectLevel ?? 'mid';
+const DEFECT_RATIO_BY_LEVEL: Record<'low' | 'mid' | 'high', number> = {
+  low: 0.03,
+  mid: 0.08,
+  high: 0.16,
+};
 
-  if (diameter >= 75 && brix >= 12 && defect === 'low') {
-    return { grade: 'A', basePrice: GRADE_BASE_PRICE.A };
+export function determineGrade(input: GradeInput): GradeResult {
+  const colorScore = clamp(input.colorScore ?? 72, 0, 100);
+  const sizeScore = clamp(input.sizeScore ?? scoreByDiameter(input.diameter), 0, 100);
+  const maturityScore = clamp(input.maturityScore ?? scoreByBrix(input.brix), 0, 100);
+  const defectRatio = clamp(
+    input.defectRatio ?? DEFECT_RATIO_BY_LEVEL[input.defectLevel ?? 'mid'],
+    0,
+    1,
+  );
+
+  const qualityScore = Number(
+    (
+      colorScore * 0.3 +
+      sizeScore * 0.3 +
+      maturityScore * 0.25 +
+      (1 - defectRatio) * 100 * 0.15
+    ).toFixed(2),
+  );
+
+  if (
+    qualityScore >= 85 &&
+    defectRatio <= 0.05 &&
+    sizeScore >= 78 &&
+    maturityScore >= 78 &&
+    colorScore >= 80
+  ) {
+    return {
+      grade: 'A',
+      basePrice: GRADE_BASE_PRICE.A,
+      qualityScore,
+      factors: { colorScore, sizeScore, maturityScore, defectRatio },
+    };
   }
-  if (diameter >= 68 && brix >= 10 && defect !== 'high') {
-    return { grade: 'B', basePrice: GRADE_BASE_PRICE.B };
+
+  if (
+    qualityScore >= 72 &&
+    defectRatio <= 0.12 &&
+    sizeScore >= 65 &&
+    maturityScore >= 65 &&
+    colorScore >= 65
+  ) {
+    return {
+      grade: 'B',
+      basePrice: GRADE_BASE_PRICE.B,
+      qualityScore,
+      factors: { colorScore, sizeScore, maturityScore, defectRatio },
+    };
   }
-  return { grade: 'C', basePrice: GRADE_BASE_PRICE.C };
+
+  return {
+    grade: 'C',
+    basePrice: GRADE_BASE_PRICE.C,
+    qualityScore,
+    factors: { colorScore, sizeScore, maturityScore, defectRatio },
+  };
 }
 
 export function calculatePrice(params: {
@@ -92,5 +146,23 @@ export function buildSuggestion(input: {
 }) {
   const gradeText = input.grade === 'A' ? '一级果' : input.grade === 'B' ? '二级果' : '三级果';
   return `建议按${gradeText}在${input.channel}渠道销售，${input.packageType}包装建议价约 ${input.finalPrice} 元/斤，合理区间 ${input.priceRange.min}-${input.priceRange.max} 元/斤。`;
+}
+
+function scoreByDiameter(diameter?: number): number {
+  if (!diameter || !Number.isFinite(diameter)) {
+    return 68;
+  }
+  return 50 + (diameter - 55) * 1.4;
+}
+
+function scoreByBrix(brix?: number): number {
+  if (!brix || !Number.isFinite(brix)) {
+    return 70;
+  }
+  return 50 + brix * 3.2;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
 }
 

@@ -50,6 +50,7 @@ async function main() {
 
   // 1) 清库：按外键依赖顺序删除
   await prisma.traceRecord.deleteMany();
+  await prisma.fruitGradeRecord.deleteMany();
   await prisma.weatherCache.deleteMany();
   await prisma.product.deleteMany();
   await prisma.riskRecord.deleteMany();
@@ -256,7 +257,100 @@ async function main() {
     productIds.push(product.id);
   }
 
-  // 7) 创建至少 1 条溯源记录（这里每个产品都生成 1 条）
+  // 7) 创建风险记录（每批次 1 条）
+  for (let i = 0; i < batches.length; i++) {
+    const batch = batches[i];
+    const levelCycle = [RiskLevel.low, RiskLevel.mid, RiskLevel.high] as const;
+    const riskLevel = levelCycle[i % levelCycle.length];
+    const levelTextMap: Record<RiskLevel, string> = {
+      [RiskLevel.low]: '低风险',
+      [RiskLevel.mid]: '中风险',
+      [RiskLevel.high]: '高风险',
+    };
+
+    await prisma.riskRecord.create({
+      data: {
+        batchId: batch.id,
+        riskType: 'disease-weather-composite',
+        riskLevel,
+        levelText: levelTextMap[riskLevel],
+        summary: `批次 ${batch.batchNo} 当前风险等级：${levelTextMap[riskLevel]}`,
+        suggestion:
+          riskLevel === RiskLevel.high
+            ? '建议立即人工复核并执行针对性处置。'
+            : riskLevel === RiskLevel.mid
+              ? '建议加强巡检频次并关注病斑扩散。'
+              : '建议保持常规巡检与记录。',
+        sourceData: {
+          weatherScore: 35 + i * 8,
+          diseaseScore: 25 + i * 10,
+          operationGapDays: 3 + i,
+          seed: true,
+        },
+      },
+    });
+  }
+
+  // 8) 创建果实分级记录（每批次 1 条）
+  for (let i = 0; i < batches.length; i++) {
+    const batch = batches[i];
+    const colorScore = 82 - i * 4;
+    const defectRatio = 0.03 + i * 0.02;
+    const sizeScore = 86 - i * 3;
+    const maturityScore = 80 - i * 2;
+    const gradeText = i === 0 ? 'A' : i === 1 ? 'B' : 'C';
+    const gradeCode = gradeText;
+    const retailMinPrice = 6.5 - i * 0.5;
+    const retailMaxPrice = 8.5 - i * 0.5;
+    const wholesaleMinPrice = 4.8 - i * 0.4;
+    const wholesaleMaxPrice = 6.2 - i * 0.4;
+    const finalPrice = Number(((retailMinPrice + retailMaxPrice) / 2).toFixed(2));
+
+    await prisma.fruitGradeRecord.create({
+      data: {
+        requestId: `seed-grade-${batch.id}`,
+        batchId: batch.id,
+        imageUrl: imageSeeds[i % imageSeeds.length],
+        channel: i % 2 === 0 ? 'retail' : 'wholesale',
+        packageType: i % 2 === 0 ? 'box' : 'bulk',
+        region: '湖北-宜昌',
+        diameter: 72 - i * 3,
+        brix: 11.8 - i * 0.6,
+        weight: 220 - i * 15,
+        defectLevel: defectRatio > 0.06 ? 'mid' : 'low',
+        colorScore,
+        defectRatio,
+        sizeScore,
+        maturityScore,
+        detectedDiameter: 71 - i * 3,
+        confidence: 0.9 - i * 0.08,
+        gradeCode,
+        gradeText,
+        retailMinPrice,
+        retailMaxPrice,
+        wholesaleMinPrice,
+        wholesaleMaxPrice,
+        finalPrice,
+        engineSource: 'seed-rule-engine',
+        decisionSource: 'seed-rule-engine',
+        modelVersion: 'seed-v1',
+        reason: `批次 ${batch.batchNo} 综合评分完成分级，等级 ${gradeText}。`,
+        riskWarning: defectRatio > 0.06 ? '瑕疵比例偏高，建议人工复核。' : '风险可控。',
+        factors: {
+          colorScore,
+          defectRatio,
+          sizeScore,
+          maturityScore,
+        },
+        rawResult: {
+          requestSource: 'seed',
+          seed: true,
+        },
+      },
+    });
+  }
+
+  // 9) 创建至少 1 条溯源记录（这里每个产品都生成 1 条）
   for (let i = 0; i < productIds.length; i++) {
     const product = await prisma.product.findUniqueOrThrow({
       where: { id: productIds[i] },
@@ -292,7 +386,7 @@ async function main() {
     });
   }
 
-  // 8) （可选）插入一条天气缓存，便于首页/风险预警页面查看
+  // 10) （可选）插入一条天气缓存，便于首页/风险预警页面查看
   const today = new Date();
   const y = today.getUTCFullYear();
   const m = today.getUTCMonth() + 1;
@@ -338,4 +432,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
-

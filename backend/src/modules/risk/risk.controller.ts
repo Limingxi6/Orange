@@ -1,4 +1,4 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -133,6 +133,19 @@ export class RiskController {
   })
   getHistory(@Query() query: QueryRiskHistoryDto) {
     return this.riskService.getHistory(query);
+  }
+
+  @Get(':batchId')
+  @ApiOperation({ summary: '鎵规椋庨櫓璇勪及锛堣矾寰勫弬鏁版牸寮忥級' })
+  @ApiResponse({
+    status: 200,
+    description: '璇勪及鎴愬姛',
+  })
+  getAssessmentByPath(
+    @CurrentUser('id') userId: number,
+    @Param('batchId', ParseIntPipe) batchId: number,
+  ) {
+    return this.riskService.getAssessment(userId, { batchId });
   }
 }
 

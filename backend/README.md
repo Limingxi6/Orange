@@ -14,7 +14,23 @@
 
 ## 快速开始
 
-### 1. 安装依赖
+### 0.（推荐）先准备 AI Python 虚拟环境
+
+> 说明：`backend` 本身是 Node.js 服务，不依赖 Python 虚拟环境；但如果你要联调病害识别/果实分级等 AI 能力，建议先完成此步骤。
+
+```bash
+# 在项目根目录执行
+cd ai
+python -m venv .venv
+
+# Windows PowerShell
+.\.venv\Scripts\Activate.ps1
+
+# 安装 AI 依赖
+pip install -r requirements.txt
+```
+
+### 1. 安装后端依赖
 
 ```bash
 cd backend
@@ -215,3 +231,91 @@ export class ExampleService {
 ## License
 
 MIT
+
+---
+
+## AI MVP Update (2026-04-13)
+
+### New/Aligned Endpoints
+
+- `POST /ai/disease/predict`
+  - Multipart upload (`file`) or `imageUrl`
+  - Compatible fields: `batchId` / `batch_id`
+  - Returns frontend-friendly fields: `label`, `advice`, `needManualReview`, and legacy-compatible fields.
+- `POST /ai/fruit/grade`
+  - Multipart upload (`file`) or `imageUrl`
+  - Compatible fields: `batchId` / `batch_id`, `packageType` / `packaging`
+  - Returns grading + pricing payload used by mini-program fruit-grade page.
+- `GET /api/risk/:batchId`
+  - Path-param version of risk assessment.
+  - Existing `GET /api/risk/assessment?batchId=...` remains available.
+
+### Traditional Model + LLM Collaboration
+
+- Disease recognition / fruit grading / risk scoring:
+  - Rule-based/traditional deterministic logic first (MVP).
+- LLM usage:
+  - Explanation polishing, risk reason/suggestion polishing, traceability narrative generation.
+  - If LLM is not configured, system falls back to deterministic templates.
+
+### New Environment Variables
+
+```env
+# Disease AI inference service
+DISEASE_AI_BASE_URL=
+DISEASE_AI_PREDICT_PATH=/predict
+DISEASE_AI_TIMEOUT_MS=15000
+DISEASE_AI_API_KEY=
+
+# LLM
+LLM_ENABLED=false
+LLM_BASE_URL=
+LLM_CHAT_PATH=/v1/chat/completions
+LLM_API_KEY=
+LLM_MODEL=gpt-4o-mini
+LLM_TIMEOUT_MS=15000
+LLM_TEMPERATURE=0.2
+LLM_MAX_TOKENS=512
+```
+
+### Quick API Examples
+
+```bash
+# 1) AI disease predict
+curl -X POST "http://localhost:8080/ai/disease/predict" \
+  -H "Authorization: Bearer <token>" \
+  -F "file=@leaf.jpg" \
+  -F "batchId=1"
+
+# 2) AI fruit grade
+curl -X POST "http://localhost:8080/ai/fruit/grade" \
+  -H "Authorization: Bearer <token>" \
+  -F "file=@fruit.jpg" \
+  -F "channel=电商" \
+  -F "packageType=礼盒" \
+  -F "region=湖北宜昌"
+
+# 3) Risk assessment by path param
+curl -X GET "http://localhost:8080/api/risk/1" \
+  -H "Authorization: Bearer <token>"
+```
+
+### Tests Added (Skeleton)
+
+- `src/modules/ai/ai-narrative.service.spec.ts`
+- `src/modules/price/price-engine.spec.ts`
+
+Run:
+
+```bash
+npm run build
+npm test -- --runInBand
+```
+
+### Training/Inference Skeleton
+
+- `ai/disease/train.py`
+- `ai/disease/infer_service.py`
+- `ai/fruit/train.py`
+- `ai/fruit/infer.py`
+

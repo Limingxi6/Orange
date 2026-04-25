@@ -1,10 +1,19 @@
 const diseaseService = require('../../services/disease')
 const logService = require('../../services/log')
 
+const RECENT_BATCH_KEY = 'recentBatchId'
+
 const SEVERITY_MAP = {
-  '高': { type: 'danger', color: '#ee0a24' },
-  '中': { type: 'warning', color: '#ff976a' },
-  '低': { type: 'success', color: '#07c160' }
+  high: { type: 'danger', color: '#ee0a24', text: '高' },
+  mid: { type: 'warning', color: '#ff976a', text: '中' },
+  low: { type: 'success', color: '#07c160', text: '低' },
+  高: { type: 'danger', color: '#ee0a24', text: '高' },
+  中: { type: 'warning', color: '#ff976a', text: '中' },
+  低: { type: 'success', color: '#07c160', text: '低' }
+}
+
+function getSeverityConfig(severity) {
+  return SEVERITY_MAP[severity] || SEVERITY_MAP.low
 }
 
 Page({
@@ -20,17 +29,18 @@ Page({
     result: null,
     confidencePercent: '',
     severityTag: 'warning',
+    severityText: '低',
     saving: false,
     saved: false
   },
 
   onLoad(options) {
-    if (options.batchId) {
-      this.setData({ batchId: options.batchId })
+    const batchId = this._resolveBatchId(options)
+    if (batchId) {
+      this.setData({ batchId })
+      this._rememberBatchId(batchId)
     }
   },
-
-  /* ---------- 图片选择 ---------- */
 
   onAfterRead(e) {
     const { file } = e.detail
@@ -55,8 +65,6 @@ Page({
     })
   },
 
-  /* ---------- 识别 ---------- */
-
   async onRecognize() {
     if (!this.data.imagePath) {
       wx.showToast({ title: '请先选择图片', icon: 'none' })
@@ -66,12 +74,17 @@ Page({
 
     try {
       const result = await diseaseService.predict(this.data.imagePath, this.data.batchId)
+      const severityCfg = getSeverityConfig(result.severity)
+      const confidence = Number(result.confidence)
+      const confidencePercent = Number.isFinite(confidence)
+        ? (confidence <= 1 ? confidence * 100 : confidence).toFixed(1) + '%'
+        : '--'
 
-      const severityCfg = SEVERITY_MAP[result.severity] || SEVERITY_MAP['低']
       this.setData({
         result,
-        confidencePercent: (result.confidence * 100).toFixed(1) + '%',
+        confidencePercent,
         severityTag: severityCfg.type,
+        severityText: result.severityText || severityCfg.text,
         showResult: true,
         saved: false
       })
@@ -83,26 +96,32 @@ Page({
     }
   },
 
-  /* ---------- 保存为农事日志 ---------- */
-
   async onSaveLog() {
-    const { result, imagePath, showResult, saving, saved, batchId } = this.data
+    const { result, showResult, saving, saved, batchId, severityText } = this.data
     if (!showResult || !result) {
       wx.showToast({ title: '请先完成识别', icon: 'none' })
       return
     }
+
+    const normalizedBatchId = this._normalizeBatchId(batchId)
+    if (!normalizedBatchId) {
+      wx.showToast({ title: '请先选择关联批次后再保存日志', icon: 'none' })
+      return
+    }
+
     if (saving || saved) return
 
     this.setData({ saving: true })
     try {
       const serverImageUrl = result.image_url || result.imageUrl || ''
       await logService.create({
-        batchId,
+        batchId: normalizedBatchId,
         type: '识别',
-        description: `${result.label}（置信度 ${(result.confidence * 100).toFixed(1)}%，${result.severity}级）\n${result.advice}`,
+        description: `${result.label}（置信度 ${this.data.confidencePercent}，${severityText}级）\n${result.advice}`,
         image_url: serverImageUrl,
         source: 'disease_recognize'
       })
+      this._rememberBatchId(normalizedBatchId)
       this.setData({ saved: true })
       wx.showToast({ title: '已保存为农事日志', icon: 'success' })
     } catch (err) {
@@ -110,5 +129,33 @@ Page({
     } finally {
       this.setData({ saving: false })
     }
+  },
+
+  _resolveBatchId(options = {}) {
+    const fromOptions = this._normalizeBatchId(options.batchId)
+    if (fromOptions) return fromOptions
+
+    const app = getApp()
+    const fromGlobal = this._normalizeBatchId(app && app.globalData ? app.globalData.recentBatchId : '')
+    if (fromGlobal) return fromGlobal
+
+    const fromStorage = this._normalizeBatchId(wx.getStorageSync(RECENT_BATCH_KEY))
+    return fromStorage || ''
+  },
+
+  _normalizeBatchId(value) {
+    const id = Number(value)
+    return Number.isFinite(id) && id > 0 ? String(id) : ''
+  },
+
+  _rememberBatchId(batchId) {
+    const id = this._normalizeBatchId(batchId)
+    if (!id) return
+
+    const app = getApp()
+    if (app && app.globalData) {
+      app.globalData.recentBatchId = id
+    }
+    wx.setStorageSync(RECENT_BATCH_KEY, id)
   }
 })

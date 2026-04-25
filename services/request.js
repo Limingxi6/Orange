@@ -1,7 +1,5 @@
 const config = require('./config')
 
-// ─── 内部工具 ───────────────────────────────────────
-
 function _getAuth() {
   const token = wx.getStorageSync('token') || ''
   if (!token) return ''
@@ -14,7 +12,7 @@ function _kick401() {
 }
 
 function _toast(msg) {
-  wx.showToast({ title: msg || '请求失败', icon: 'none', duration: 2000 })
+  wx.showToast({ title: msg || 'Request failed', icon: 'none', duration: 2000 })
 }
 
 function _log(tag, info) {
@@ -27,10 +25,22 @@ function _normalizeUrlPath(url) {
 }
 
 function _resolveBaseUrlByPath(urlPath) {
-  if (urlPath.startsWith('/ai/')) return config.AI_BASE_URL || config.BASE_URL
-  if (urlPath.startsWith('/chain/')) return config.CHAIN_BASE_URL || config.BASE_URL
-  if (urlPath.startsWith('/api/')) return config.API_BASE_URL || config.BASE_URL
-  return config.BASE_URL
+  if (typeof config.resolveBaseUrlByPath === 'function') {
+    return config.resolveBaseUrlByPath(urlPath)
+  }
+
+  const fallbackBaseUrl = typeof config.getBaseUrl === 'function'
+    ? config.getBaseUrl()
+    : config.BASE_URL
+
+  if (urlPath.startsWith('/ai/')) return config.AI_BASE_URL || fallbackBaseUrl
+  if (urlPath.startsWith('/chain/')) return config.CHAIN_BASE_URL || fallbackBaseUrl
+  if (urlPath.startsWith('/api/')) return config.API_BASE_URL || fallbackBaseUrl
+  return fallbackBaseUrl
+}
+
+function _isAuthFreePath(urlPath) {
+  return urlPath === '/api/auth/login' || urlPath === '/api/auth/send-code'
 }
 
 function _cleanRequestData(data) {
@@ -43,10 +53,33 @@ function _cleanRequestData(data) {
   return cleaned
 }
 
-/**
- * 统一处理业务错误：弹 toast + reject
- * 单个请求可传 showError:false 跳过 toast
- */
+function _normalizeNetworkErrorMessage(errMsg, fullUrl) {
+  const raw = String(errMsg || '')
+  const lowered = raw.toLowerCase()
+
+  if (raw.includes('ERR_CONNECTION_REFUSED')) {
+    return 'Backend unreachable. Confirm service is running and phone can access: ' + fullUrl
+  }
+
+  if (raw.includes('url not in domain list')) {
+    return 'Domain is not in WeChat request domain whitelist'
+  }
+
+  if (lowered.includes('timeout') || lowered.includes('timed out')) {
+    return 'Request timeout. Check phone/backend network connectivity: ' + fullUrl
+  }
+
+  if (lowered.includes('ssl') || lowered.includes('certificate')) {
+    return 'HTTPS certificate verification failed'
+  }
+
+  if (raw.includes('ERR_NAME_NOT_RESOLVED') || lowered.includes('enotfound')) {
+    return 'Domain resolution failed: ' + fullUrl
+  }
+
+  return raw || 'Network error'
+}
+
 function _rejectWithToast(msg, showError) {
   const shown = showError !== false && config.SHOW_ERROR_TOAST
   if (shown) _toast(msg)
@@ -55,68 +88,66 @@ function _rejectWithToast(msg, showError) {
   return err
 }
 
-// ─── wx.request 统一封装 ────────────────────────────
-//
-// 支持所有 HTTP 方法：GET / POST / PUT / DELETE
-// options: { url, method, data, header, showError }
-//   showError  默认 true，设为 false 可关闭本次请求的自动 toast
-
 const request = (options) => {
   const {
     url,
     method = 'GET',
     data = {},
     header = {},
-    showError
+    showError,
+    timeout,
   } = options
 
   const urlPath = _normalizeUrlPath(url)
   const fullUrl = _resolveBaseUrlByPath(urlPath) + urlPath
   const cleanedData = _cleanRequestData(data)
+  const auth = _getAuth()
 
-  _log('REQ', method + ' ' + urlPath + ' ' + JSON.stringify(cleanedData))
+  if (!auth && !_isAuthFreePath(urlPath)) {
+    _kick401()
+    return Promise.reject(_rejectWithToast('Please login first', showError))
+  }
+
+  _log('REQ', method + ' ' + fullUrl + ' ' + JSON.stringify(cleanedData))
 
   return new Promise((resolve, reject) => {
     wx.request({
       url: fullUrl,
       method,
       data: cleanedData,
-      timeout: config.TIMEOUT,
+      timeout:
+        typeof timeout === 'number' && Number.isFinite(timeout) && timeout > 0
+          ? Math.floor(timeout)
+          : config.TIMEOUT,
       header: {
         'Content-Type': 'application/json',
-        'Authorization': _getAuth(),
+        'Authorization': auth,
         ...header
       },
       success(res) {
-        _log('RES', res.statusCode + ' ' + urlPath + ' ' +
-          JSON.stringify(res.data).slice(0, 300))
+        _log('RES', res.statusCode + ' ' + urlPath + ' ' + JSON.stringify(res.data).slice(0, 300))
 
         if (res.statusCode === 401) {
           _kick401()
-          reject(_rejectWithToast('登录已过期，请重新登录', showError))
+          reject(_rejectWithToast('Session expired, please login again', showError))
           return
         }
 
-        if (res.statusCode >= 200 && res.statusCode < 300 &&
-            res.data && res.data.code === 0) {
+        if (res.statusCode >= 200 && res.statusCode < 300 && res.data && res.data.code === 0) {
           resolve(res.data.data)
           return
         }
 
-        // code !== 0 或 HTTP 非 2xx → 统一走错误
-        const msg = (res.data && res.data.message) ||
-          '请求失败(' + res.statusCode + ')'
+        const msg = (res.data && res.data.message) || ('Request failed(' + res.statusCode + ')')
         reject(_rejectWithToast(msg, showError))
       },
       fail(err) {
-        _log('ERR', urlPath + ' ' + err.errMsg)
-        reject(_rejectWithToast(err.errMsg || '网络异常', showError))
+        _log('ERR', fullUrl + ' ' + err.errMsg)
+        reject(_rejectWithToast(_normalizeNetworkErrorMessage(err.errMsg, fullUrl), showError))
       }
     })
   })
 }
-
-// ─── HTTP 快捷方法 ──────────────────────────────────
 
 request.get = (url, data, opts) =>
   request({ url, method: 'GET', data, ...opts })
@@ -130,10 +161,6 @@ request.put = (url, data, opts) =>
 request.del = (url, data, opts) =>
   request({ url, method: 'DELETE', data, ...opts })
 
-// ─── wx.uploadFile 统一封装 ─────────────────────────
-//
-// options: { url, filePath, name, formData, showError }
-
 const uploadFile = (options) => {
   const {
     url,
@@ -145,64 +172,66 @@ const uploadFile = (options) => {
 
   const urlPath = _normalizeUrlPath(url)
   const fullUrl = _resolveBaseUrlByPath(urlPath) + urlPath
+  const auth = _getAuth()
+  const cleanedFormData = _cleanRequestData(formData)
 
-  _log('UPLOAD', urlPath + ' name=' + name)
+  if (!auth && !_isAuthFreePath(urlPath)) {
+    _kick401()
+    return Promise.reject(_rejectWithToast('Please login first', showError))
+  }
+
+  _log('UPLOAD', fullUrl + ' name=' + name)
 
   return new Promise((resolve, reject) => {
     wx.uploadFile({
       url: fullUrl,
       filePath,
       name,
-      formData,
+      formData: cleanedFormData,
       timeout: config.TIMEOUT,
-      header: { 'Authorization': _getAuth() },
+      header: { 'Authorization': auth },
       success(res) {
         _log('UPLOAD-RES', res.statusCode + ' ' + urlPath)
 
         if (res.statusCode === 401) {
           _kick401()
-          reject(_rejectWithToast('登录已过期，请重新登录', showError))
+          reject(_rejectWithToast('Session expired, please login again', showError))
           return
         }
 
         let parsed
-        try { parsed = JSON.parse(res.data) } catch (e) {
-          reject(_rejectWithToast('响应解析失败', showError))
+        try {
+          parsed = JSON.parse(res.data)
+        } catch (e) {
+          reject(_rejectWithToast('Failed to parse response', showError))
           return
         }
 
         if (parsed.code === 0) {
           resolve(parsed.data)
         } else {
-          reject(_rejectWithToast(parsed.message || '上传失败', showError))
+          reject(_rejectWithToast(parsed.message || 'Upload failed', showError))
         }
       },
       fail(err) {
-        _log('UPLOAD-ERR', urlPath + ' ' + err.errMsg)
-        reject(_rejectWithToast(err.errMsg || '上传失败', showError))
+        _log('UPLOAD-ERR', fullUrl + ' ' + err.errMsg)
+        reject(_rejectWithToast(_normalizeNetworkErrorMessage(err.errMsg, fullUrl), showError))
       }
     })
   })
 }
 
-// ─── mock 工具 ──────────────────────────────────────
-
 const mockResolve = (data, delay) => {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     setTimeout(() => resolve(data), delay || config.MOCK_DELAY)
   })
 }
 
-/**
- * 真实接口优先，失败时可降级 mock
- * @param {Function} realFn  返回真实请求 Promise 的函数（惰性调用）
- * @param {Function} mockFn  返回 mock 数据 Promise 的函数
- */
 const tryReal = (realFn, mockFn) => {
   if (config.USE_MOCK) return mockFn()
-  return realFn().catch(err => {
+  return realFn().catch((err) => {
     if (config.MOCK_FALLBACK) {
-      console.warn('[mock降级]', err.message || err)
+      console.warn('[mock fallback]', err.message || err)
       return mockFn()
     }
     throw err

@@ -21,6 +21,11 @@
     "backgroundColor": "#F5F5F5",
     "backgroundTextStyle": "dark"
   },
+  "permission": {
+    "scope.userLocation": {
+      "desc": "用于自动识别当前位置并获取天气"
+    }
+  },
   "tabBar": {
     "color": "#999999",
     "selectedColor": "#FF8C00",

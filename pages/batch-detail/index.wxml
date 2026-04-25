@@ -69,8 +69,8 @@
       <view class="section-title">最近农事日志</view>
       <view class="log-list" wx:if="{{logList.length > 0}}">
         <view class="log-item" wx:for="{{logList}}" wx:key="id">
-          <view class="log-date">{{item.time}}</view>
-          <view class="log-content">{{item.content}}</view>
+          <view class="log-date">{{item.displayTime || item.time}}</view>
+          <view class="log-content">{{item.displayContent || item.content || '暂无日志摘要'}}</view>
           <view class="log-type">{{item.typeText || item.type}}</view>
         </view>
       </view>

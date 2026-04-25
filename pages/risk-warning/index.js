@@ -2,6 +2,8 @@ import * as echarts from '../../components/ec-canvas/echarts'
 
 const weatherService = require('../../services/weather')
 const riskService = require('../../services/risk')
+const batchService = require('../../services/batch')
+const { resolveWeatherLocation } = require('../../utils/location')
 
 /* ========== 图表配置 ========== */
 
@@ -115,6 +117,7 @@ let _chartData = []
 Page({
   data: {
     loading: true,
+    batchId: null,
 
     weather: null,
     weatherFailed: false,
@@ -144,7 +147,9 @@ Page({
     }
   },
 
-  onLoad() {
+  onLoad(options) {
+    const batchId = this._parseBatchId(options && options.batchId)
+    this.setData({ batchId })
     this.fetchData()
   },
 
@@ -157,11 +162,20 @@ Page({
       historyFailed: false
     })
 
+    const batchId = await this._resolveBatchId()
+
+    let weatherQuery = { regionCode: '30.5928,114.3055', city: '武汉市' }
+    try {
+      weatherQuery = await resolveWeatherLocation()
+    } catch (err) {
+      console.warn('定位失败，回退武汉天气', err)
+    }
+
     const [weatherRes, forecastRes, riskRes, historyRes] = await Promise.allSettled([
-      weatherService.getWeather(),
-      weatherService.getForecast(null, 15),
-      riskService.getAssessment('default'),
-      riskService.getHistory()
+      weatherService.getWeather(weatherQuery),
+      weatherService.getForecast(weatherQuery, 15),
+      batchId ? riskService.getAssessment(batchId) : Promise.reject(new Error('missing batchId')),
+      batchId ? riskService.getHistory({ batchId, limit: 10 }) : Promise.reject(new Error('missing batchId'))
     ])
 
     const update = { loading: false }
@@ -231,5 +245,25 @@ Page({
 
   onExpandChange(e) {
     this.setData({ expandLater: e.detail })
+  },
+
+  _parseBatchId(value) {
+    const id = Number(value)
+    return Number.isFinite(id) && id > 0 ? id : null
+  },
+
+  async _resolveBatchId() {
+    if (this.data.batchId) return this.data.batchId
+
+    try {
+      const list = await batchService.getList({ page: 1, pageSize: 1 })
+      const firstId = list && list.length ? this._parseBatchId(list[0].id) : null
+      this.setData({ batchId: firstId })
+      return firstId
+    } catch (err) {
+      console.error('批次列表加载失败，无法获取风险评估 batchId', err)
+      this.setData({ batchId: null })
+      return null
+    }
   }
 })

@@ -7,6 +7,8 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { TraceService } from './trace.service';
+import { VerifyTraceDataDto } from './dto/verify-trace-data.dto';
+import { type TraceVerifyData } from './trace.types';
 
 @ApiTags('trace')
 @ApiBearerAuth('JWT')
@@ -15,8 +17,8 @@ export class TraceController {
   constructor(private readonly traceService: TraceService) {}
 
   @Get(':code')
-  @ApiOperation({ summary: '通过 traceCode 查询溯源信息' })
-  @ApiParam({ name: 'code', description: '溯源码', example: 'P1-B1001-KS8Q1A' })
+  @ApiOperation({ summary: '通过 code 查询溯源信息' })
+  @ApiParam({ name: 'code', description: '溯源码（兼容数字ID）', example: 'P1-B1001-KS8Q1A' })
   @ApiResponse({
     status: 200,
     description: '查询成功',
@@ -70,7 +72,12 @@ export class TraceController {
             },
           ],
           traceCode: 'P1-B1001-KS8Q1A',
+          proofType: 'hash',
+          proofHash: 'd7c3dd4af06d9dcf40b2b2b8bfa19ac0f897...',
+          snapshotVersion: 1,
           verified: true,
+          generatedAt: '2026-03-23T10:00:00.000Z',
+          anchorStatus: 'not_anchored',
           chainHash: 'd7c3dd4af06d9dcf40b2b2b8bfa19ac0f897...',
           createdAt: '2026-03-23T10:01:00.000Z',
         },
@@ -82,26 +89,36 @@ export class TraceController {
   }
 
   @Get(':code/verify')
-  @ApiOperation({ summary: '验证溯源链 hash 是否匹配' })
-  @ApiParam({ name: 'code', description: '溯源码', example: 'P1-B1001-KS8Q1A' })
+  @ApiOperation({ summary: '验证溯源快照哈希是否匹配' })
+  @ApiParam({ name: 'code', description: '溯源码（兼容数字ID）', example: 'P1-B1001-KS8Q1A' })
   @ApiResponse({
     status: 200,
-    description: '验证成功',
+    description: '验证成功（data 结构见 VerifyTraceDataDto）',
+    type: VerifyTraceDataDto,
     schema: {
       example: {
         code: 0,
         message: 'ok',
         data: {
+          verified: true,
+          status: 'verified',
+          message: '哈希校验通过',
+          proofType: 'hash',
+          proofHash: 'd7c3dd4af06d9dcf40b2b2b8bfa19ac0f897...',
+          anchorStatus: 'success',
+          txId: '0xabc123...',
+          blockNumber: '128',
+          chainProvider: 'evm',
+          chainNetwork: 'sepolia',
+          anchoredAt: '2026-04-21T09:30:00.000Z',
           traceCode: 'P1-B1001-KS8Q1A',
           exists: true,
-          verified: true,
           chainHash: 'd7c3dd4af06d9dcf40b2b2b8bfa19ac0f897...',
-          message: '验证通过，溯源记录未被篡改',
         },
       },
     },
   })
-  verifyChain(@Param('code') code: string) {
+  verifyChain(@Param('code') code: string): Promise<TraceVerifyData> {
     return this.traceService.verifyChain(code);
   }
 }

@@ -27,5 +27,18 @@ export class QueryBatchDto {
   @Min(1)
   @Max(100)
   pageSize?: number = 10;
+
+  @ApiPropertyOptional({ description: '每页数量（limit 别名）', minimum: 1, maximum: 100 })
+  @Type(() => Number)
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  limit?: number;
+
+  @ApiPropertyOptional({ description: '排序方式（latest/oldest）', example: 'latest' })
+  @IsOptional()
+  @IsString()
+  sort?: string;
 }
 

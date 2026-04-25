@@ -1,0 +1,11 @@
+﻿llm:
+  base_url: "https://api.openai.com"
+  chat_path: "/v1/chat/completions"
+  api_key: "YOUR_API_KEY"
+  model: "gpt-4o-mini"
+  timeout_sec: 30
+  temperature: 0.2
+  max_tokens: 300
+
+# NOTE: 运行时优先使用环境变量：OPENAI_* > DEEPSEEK_* > LLM_*
+# TODO: 生产环境请改为环境变量注入，不要明文写 key。

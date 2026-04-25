@@ -88,23 +88,306 @@ const LOG_TYPE_LABEL_MAP = {
   销售: '销售'
 }
 
-function _normalizeLogItem(item = {}) {
-  const type = item.type || ''
-  const images = Array.isArray(item.images) ? item.images : []
-  const safeImages = images.filter((url) => {
-    if (typeof url !== 'string' || !url) return false
-    if (/^https?:\/\/example\.com\//i.test(url)) return false
-    return true
-  })
+const READABLE_KEYS = ['description', 'content', 'remark', 'advice', 'reason', 'detail', 'message', 'text']
+const META_ONLY_KEYS = [
+  'source',
+  'operator',
+  'createdBy',
+  'updatedBy',
+  'id',
+  'type',
+  'operatorId',
+  'createdAt',
+  'updatedAt'
+]
+const SOURCE_LABEL_MAP = {
+  manual: '手动记录',
+  disease_recognize: '病害识别',
+  system: '系统生成'
+}
 
-  return {
-    ...item,
-    typeText: LOG_TYPE_LABEL_MAP[type] || type,
-    images: safeImages
+function _normalizeText(value) {
+  if (value === null || value === undefined) return ''
+  const text = String(value).replace(/\r\n/g, '\n').trim()
+  return text.replace(/[ \t]+/g, ' ')
+}
+
+function _safeStringify(value) {
+  try {
+    return JSON.stringify(value, null, 2)
+  } catch (err) {
+    return ''
   }
 }
 
+function _pickFirstText(values = []) {
+  for (const value of values) {
+    const text = _normalizeText(value)
+    if (text) return text
+  }
+  return ''
+}
+
+function _isPlainObject(value) {
+  return !!value && typeof value === 'object' && !Array.isArray(value)
+}
+
+function _isMetaOnlyObject(obj) {
+  if (!_isPlainObject(obj)) return false
+  const keys = Object.keys(obj)
+  if (!keys.length) return true
+  return keys.every((key) => META_ONLY_KEYS.includes(key))
+}
+
+function _extractReadableDetail(detail, seen = new Set()) {
+  if (detail === null || detail === undefined) return ''
+
+  if (typeof detail === 'string' || typeof detail === 'number' || typeof detail === 'boolean') {
+    return _normalizeText(detail)
+  }
+
+  if (Array.isArray(detail)) {
+    return detail
+      .map((item) => _extractReadableDetail(item, seen))
+      .filter(Boolean)
+      .join('\n')
+      .trim()
+  }
+
+  if (!_isPlainObject(detail)) {
+    return _normalizeText(detail)
+  }
+
+  if (seen.has(detail)) return ''
+  seen.add(detail)
+
+  const preferred = _pickFirstText([detail.description, detail.content, detail.remark])
+  if (preferred) return preferred
+
+  if (_isMetaOnlyObject(detail)) return ''
+
+  for (const key of READABLE_KEYS) {
+    if (Object.prototype.hasOwnProperty.call(detail, key)) {
+      const text = _extractReadableDetail(detail[key], seen)
+      if (text) return text
+    }
+  }
+
+  return _normalizeText(_safeStringify(detail))
+}
+
+function _normalizeTime(value) {
+  const text = _normalizeText(value)
+  if (!text) return ''
+  if (text.includes('T')) {
+    const compact = text.slice(0, 19).replace('T', ' ')
+    return _normalizeText(compact)
+  }
+  return text
+}
+
+function _normalizeImages(raw) {
+  let list = []
+  if (Array.isArray(raw)) {
+    list = raw
+  } else if (typeof raw === 'string' && raw.trim()) {
+    list = raw.includes(',') ? raw.split(',') : [raw]
+  }
+
+  return list
+    .map((item) => _normalizeText(item))
+    .filter((url) => {
+      if (!url) return false
+      if (/^https?:\/\/example\.com\//i.test(url)) return false
+      return true
+    })
+}
+
+function _normalizeLogItem(item = {}) {
+  const type = item.type || item.logType || item.log_type || ''
+  const detailObject = _isPlainObject(item.detail) ? item.detail : null
+
+  const displayTime = _normalizeTime(item.time || item.date || item.createdAt || item.operationDate || '')
+  const displayContent = _pickFirstText([item.description, item.content])
+
+  const preferredDetail = _pickFirstText([
+    item.description,
+    item.content,
+    detailObject && detailObject.description,
+    detailObject && detailObject.content,
+    detailObject && detailObject.remark
+  ])
+  const fallbackDetail = preferredDetail ? '' : _extractReadableDetail(item.detail)
+  const displayDetail = preferredDetail || fallbackDetail || '暂无详细描述'
+
+  const sourceCode = _pickFirstText([item.source, detailObject && detailObject.source, 'manual'])
+  const displaySource = SOURCE_LABEL_MAP[sourceCode] || sourceCode || '手动记录'
+  const displayImages = _normalizeImages(item.images || item.image_url)
+
+  return {
+    ...item,
+    time: displayTime,
+    content: displayContent || '暂无日志摘要',
+    detail: displayDetail,
+    images: displayImages,
+    displayTime,
+    displayContent: displayContent || '暂无日志摘要',
+    displayDetail,
+    displaySource,
+    displaySourceCode: sourceCode || 'manual',
+    displayImages,
+    typeText: LOG_TYPE_LABEL_MAP[type] || type,
+    type
+  }
+}
+
+function _normalizeBatchId(value) {
+  const n = Number(value)
+  return Number.isFinite(n) && n > 0 ? n : null
+}
+
+function _normalizeLogList(raw) {
+  const rows = Array.isArray(raw) ? raw : []
+  return rows.map(_normalizeLogItem)
+}
+
+function _extractBatchId(item = {}) {
+  return _normalizeBatchId(item.batchId ?? item.batch_id)
+}
+
+function _filterMockLogs(list, params = {}) {
+  let rows = Array.isArray(list) ? list.slice() : []
+  const queryType = _normalizeText(params.type)
+  const queryBatchId = _normalizeBatchId(params.batchId ?? params.batch_id)
+
+  if (queryType && queryType !== 'all') {
+    rows = rows.filter((item) => String(item.type || '') === queryType)
+  }
+
+  if (queryBatchId) {
+    rows = rows.filter((item) => {
+      const itemBatchId = _extractBatchId(item)
+      if (!itemBatchId) return true
+      return itemBatchId === queryBatchId
+    })
+  }
+
+  return rows
+}
+
+function _toDate(value) {
+  if (!value) return null
+  if (value instanceof Date && !Number.isNaN(value.getTime())) return value
+
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    const date = new Date(value)
+    return Number.isNaN(date.getTime()) ? null : date
+  }
+
+  const text = String(value).trim()
+  if (!text) return null
+
+  const normalizedText = text.includes('T') ? text : text.replace(/-/g, '/')
+  let date = new Date(normalizedText)
+  if (Number.isNaN(date.getTime())) {
+    date = new Date(text)
+  }
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
+function _getLogDate(item = {}) {
+  return _toDate(item.operationDate || item.createdAt || item.displayTime || item.time || item.date)
+}
+
+function _isSameDate(dateA, dateB) {
+  if (!(dateA instanceof Date) || !(dateB instanceof Date)) return false
+  return (
+    dateA.getFullYear() === dateB.getFullYear()
+    && dateA.getMonth() === dateB.getMonth()
+    && dateA.getDate() === dateB.getDate()
+  )
+}
+
+function _filterTodayLogs(logs, baseDate = new Date()) {
+  const list = Array.isArray(logs) ? logs : []
+  return list.filter((item) => _isSameDate(_getLogDate(item), baseDate))
+}
+
+function _sortLogsByTimeDesc(logs) {
+  const list = Array.isArray(logs) ? logs.slice() : []
+  list.sort((a, b) => {
+    const diff = (_getLogDate(b)?.getTime() || 0) - (_getLogDate(a)?.getTime() || 0)
+    if (diff) return diff
+    return Number(b.id || 0) - Number(a.id || 0)
+  })
+  return list
+}
+
+function _dedupeLogs(logs) {
+  const list = Array.isArray(logs) ? logs : []
+  const seen = new Set()
+  const deduped = []
+
+  list.forEach((item) => {
+    const batchId = _extractBatchId(item) || 'x'
+    const fallbackKey = [
+      batchId,
+      item.type || '',
+      item.time || item.displayTime || '',
+      item.content || item.displayContent || '',
+    ].join('|')
+    const key =
+      item && item.id !== undefined && item.id !== null
+        ? `id:${item.id}`
+        : `f:${fallbackKey}`
+
+    if (seen.has(key)) return
+    seen.add(key)
+    deduped.push(item)
+  })
+
+  return deduped
+}
+
+function _uniqueBatchIds(batchIds) {
+  const list = Array.isArray(batchIds) ? batchIds : []
+  const seen = new Set()
+  const result = []
+
+  list.forEach((batchId) => {
+    const normalized = _normalizeBatchId(batchId)
+    if (!normalized || seen.has(normalized)) return
+    seen.add(normalized)
+    result.push(normalized)
+  })
+
+  return result
+}
+
 const logService = {
+  /**
+   * 获取日志列表（兼容全量与按批次查询）
+   * GET /api/logs
+   * @param {{ batchId?: number|string, type?: string }} params
+   * @returns {Array}
+   */
+  getList(params = {}) {
+    const query = { ...(params || {}) }
+    if (query.batch_id && !query.batchId) query.batchId = query.batch_id
+    delete query.batch_id
+    if (query.type === 'all') delete query.type
+
+    return tryReal(
+      () =>
+        request({
+          url: '/api/logs',
+          method: 'GET',
+          data: query,
+          showError: false,
+        }).then(_normalizeLogList),
+      () => mockResolve(_filterMockLogs(MOCK_LOGS, query).map(_normalizeLogItem)),
+    )
+  },
   /**
    * 获取批次日志列表
    * GET /api/logs?batchId=:batchId
@@ -113,22 +396,54 @@ const logService = {
    * @returns {Array<{ id, time, type, content, operator, images, detail }>}
    */
   getListByBatch(batchId, params = {}) {
-    const query = { batchId: Number(batchId) }
-    if (params.type && params.type !== 'all') query.type = params.type
+    const normalizedBatchId = _normalizeBatchId(batchId)
+    if (!normalizedBatchId) {
+      return Promise.reject(new Error('Please select a valid batch first'))
+    }
+    return this.getList({ ...(params || {}), batchId: normalizedBatchId })
+  },
 
-    return tryReal(
-      () => request({ url: '/api/logs', method: 'GET', data: query }).then((list) => {
-        const rows = Array.isArray(list) ? list : []
-        return rows.map(_normalizeLogItem)
-      }),
-      () => {
-        let list = MOCK_LOGS
-        if (params.type && params.type !== 'all') {
-          list = list.filter(item => item.type === params.type)
+  /**
+   * 获取今天的操作记录
+   * 优先调用 GET /api/logs 全量；失败时按 batchIds 聚合兜底
+   * @param {{ batchIds?: Array<number|string>, limit?: number }} options
+   * @returns {Promise<Array>}
+   */
+  async getTodayRecords(options = {}) {
+    const opts = options && typeof options === 'object' ? options : {}
+    const batchIds = _uniqueBatchIds(opts.batchIds)
+    const allowAll = Boolean(opts.allowAll)
+    const limit = Number(opts.limit)
+    const hasLimit = Number.isFinite(limit) && limit > 0
+
+    let logs = []
+    const shouldFetchByBatch = batchIds.length > 0
+
+    if (shouldFetchByBatch) {
+      const settled = await Promise.allSettled(batchIds.map((batchId) => this.getListByBatch(batchId)))
+      const merged = []
+      let firstError = null
+
+      settled.forEach((result) => {
+        if (result.status === 'fulfilled') {
+          if (Array.isArray(result.value)) merged.push(...result.value)
+          return
         }
-        return mockResolve(list.map(_normalizeLogItem))
+        if (!firstError) firstError = result.reason
+      })
+
+      if (merged.length > 0) {
+        logs = merged
+      } else if (firstError) {
+        throw firstError
       }
-    )
+    } else {
+      logs = allowAll ? await this.getList() : []
+    }
+
+    const sortedToday = _sortLogsByTimeDesc(_dedupeLogs(_filterTodayLogs(logs)))
+    if (hasLimit) return sortedToday.slice(0, Math.floor(limit))
+    return sortedToday
   },
 
   /**
@@ -139,8 +454,17 @@ const logService = {
    * @returns {{ id }}
    */
   create(data) {
+    const payload = { ...(data || {}) }
+    const normalizedBatchId = _normalizeBatchId(payload.batchId ?? payload.batch_id)
+    if (!normalizedBatchId) {
+      return Promise.reject(new Error('请先选择关联批次后再保存日志'))
+    }
+
+    payload.batchId = normalizedBatchId
+    delete payload.batch_id
+
     return tryReal(
-      () => request({ url: '/api/logs', method: 'POST', data }),
+      () => request({ url: '/api/logs', method: 'POST', data: payload }),
       () => mockResolve({ id: Date.now() })
     )
   },

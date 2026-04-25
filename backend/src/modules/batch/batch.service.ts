@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+﻿import { Injectable } from '@nestjs/common';
+import { Prisma, ProductStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { BusinessException } from '../../common/exceptions/business.exception';
 import { ErrorCode } from '../../common/constants/error-code.enum';
@@ -13,8 +13,11 @@ export class BatchService {
 
   async getList(query: QueryBatchDto) {
     const page = query.page ?? 1;
-    const pageSize = query.pageSize ?? 10;
+    const pageSize = query.limit ?? query.pageSize ?? 10;
     const skip = (page - 1) * pageSize;
+    const sort = (query.sort || 'latest').trim().toLowerCase();
+    const orderBy: Prisma.BatchOrderByWithRelationInput =
+      sort === 'oldest' ? { createdAt: 'asc' } : { createdAt: 'desc' };
 
     const where: Prisma.BatchWhereInput = {};
     const andConditions: Prisma.BatchWhereInput[] = [];
@@ -45,7 +48,7 @@ export class BatchService {
         where,
         skip,
         take: pageSize,
-        orderBy: { createdAt: 'desc' },
+        orderBy,
         select: {
           id: true,
           batchNo: true,
@@ -126,7 +129,6 @@ export class BatchService {
     const managerId = dto.managerId ?? currentUserId;
     const batchNo = dto.batchNo?.trim() || (await this.generateBatchNo());
 
-    // manager 校验
     const manager = await this.prisma.user.findUnique({
       where: { id: managerId },
       select: { id: true, status: true },
@@ -136,7 +138,6 @@ export class BatchService {
       throw new BusinessException(ErrorCode.BAD_REQUEST, '负责人不存在或不可用');
     }
 
-    // batchNo 唯一校验（传入时）
     if (dto.batchNo?.trim()) {
       const existing = await this.prisma.batch.findUnique({
         where: { batchNo },
@@ -147,23 +148,36 @@ export class BatchService {
       }
     }
 
-    const created = await this.prisma.batch.create({
-      data: {
-        batchNo,
-        orchardName: dto.orchardName.trim(),
-        variety: dto.variety.trim(),
-        area: dto.area?.trim(),
-        treeCount: dto.treeCount,
-        plantingDate: new Date(dto.plantingDate),
-        expectedHarvestDate: dto.expectedHarvestDate
-          ? new Date(dto.expectedHarvestDate)
-          : null,
-        stage: dto.stage?.trim() || '苗期',
-        status: '种植中',
-        managerId,
-        remark: dto.remark?.trim(),
-      },
-      select: { id: true },
+    const created = await this.prisma.$transaction(async (tx) => {
+      const batch = await tx.batch.create({
+        data: {
+          batchNo,
+          orchardName: dto.orchardName.trim(),
+          variety: dto.variety.trim(),
+          area: dto.area?.trim(),
+          treeCount: dto.treeCount,
+          plantingDate: new Date(dto.plantingDate),
+          expectedHarvestDate: dto.expectedHarvestDate
+            ? new Date(dto.expectedHarvestDate)
+            : null,
+          stage: dto.stage?.trim() || '苗期',
+          status: '种植中',
+          managerId,
+          remark: dto.remark?.trim(),
+        },
+        select: { id: true, batchNo: true },
+      });
+
+      // 为每个新批次自动初始化一条待上架产品，保证“我的产品”可见。
+      await tx.product.create({
+        data: {
+          batchId: batch.id,
+          productName: `${batch.batchNo} 产品`,
+          status: ProductStatus.pending,
+        },
+      });
+
+      return { id: batch.id };
     });
 
     return created;
@@ -209,4 +223,3 @@ export class BatchService {
     throw new BusinessException(ErrorCode.OPERATION_FAILED, '批次编号生成失败，请重试');
   }
 }
-

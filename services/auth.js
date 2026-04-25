@@ -1,7 +1,7 @@
 const { request, mockResolve, tryReal } = require('./request')
 
 const MOCK_USER_INFO = {
-  nickname: '橘农小李',
+  nickname: '姗樺啘灏忔潕',
   avatar: '',
   phone: '138****0000',
   role: 'farmer',
@@ -10,7 +10,7 @@ const MOCK_USER_INFO = {
 
 const authService = {
   /**
-   * 保存登录态到本地缓存
+   * 淇濆瓨鐧诲綍鎬佸埌鏈湴缂撳瓨
    * @param {string} token
    * @param {Object} userInfo
    */
@@ -20,7 +20,7 @@ const authService = {
   },
 
   /**
-   * 清理本地登录态
+   * 娓呯悊鏈湴鐧诲綍鎬?
    */
   clearSession() {
     wx.removeStorageSync('token')
@@ -28,7 +28,7 @@ const authService = {
   },
 
   /**
-   * 获取用户信息
+   * 鑾峰彇鐢ㄦ埛淇℃伅
    * GET /api/auth/profile
    * @returns {{ nickname, avatar, phone, role, userId }}
    */
@@ -37,10 +37,10 @@ const authService = {
   },
 
   /**
-   * 手机号登录
+   * 鎵嬫満鍙风櫥褰?
    * POST /api/auth/login
-   * @param {string} phone - 手机号
-   * @param {string} password  - 密码（当前登录页输入框沿用 code 变量名）
+   * @param {string} phone - 鎵嬫満鍙?
+   * @param {string} password  - 瀵嗙爜锛堝綋鍓嶇櫥褰曢〉杈撳叆妗嗘部鐢?code 鍙橀噺鍚嶏級
    * @returns {{ token, userInfo }}
    */
   login(phone, password) {
@@ -48,9 +48,9 @@ const authService = {
   },
 
   /**
-   * 发送验证码
+   * 鍙戦€侀獙璇佺爜
    * POST /api/auth/send-code
-   * @param {string} phone - 手机号
+   * @param {string} phone - 鎵嬫満鍙?
    * @returns {{ success: boolean }}
    */
   sendCode(phone) {
@@ -61,7 +61,7 @@ const authService = {
   },
 
   /**
-   * 退出登录
+   * 閫€鍑虹櫥褰?
    * POST /api/auth/logout
    * @returns {{ success: boolean }}
    */

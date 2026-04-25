@@ -1,0 +1,32 @@
+﻿project:
+  name: orange-ai-mvp
+  version: 0.3.0
+
+paths:
+  data_dir: ./data
+  model_dir: ./models
+  prompt_dir: ./prompts
+
+disease:
+  backbone: mobilenet_v3_small
+  image_size: 224
+  confidence_manual_review_threshold: 0.65
+  low_confidence_threshold: 0.55
+
+fruit_grade:
+  grade_rules_config: ./config/fruit_grade_rules.example.yaml
+  price_coeffs_config: ./config/fruit_price_coeffs.example.yaml
+  default_variety: 纽荷尔脐橙
+  default_channel: ecommerce
+  default_packaging: simple
+  default_region: 湖北宜昌
+
+risk:
+  enable_model_predictor: true
+  model_weight: 0.35
+  rule_weight: 0.65
+
+llm:
+  timeout_sec: 30
+  temperature: 0.2
+  max_tokens: 400

@@ -4,7 +4,7 @@ App({
   },
 
   onLaunch() {
-    // 预加载 Vant 图标字体，避免渲染层 ERR_CACHE_MISS
+    // Preload Vant icon font from CDN
     wx.loadFontFace({
       global: true,
       family: 'vant-icon',

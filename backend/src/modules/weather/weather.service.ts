@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { createHash } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { QueryWeatherDto } from './dto/query-weather.dto';
 import { QueryForecastDto } from './dto/query-forecast.dto';
@@ -13,6 +14,8 @@ import {
 
 @Injectable()
 export class WeatherService {
+  private static readonly WEATHER_CACHE_REGION_CODE_MAX_LENGTH = 20;
+
   constructor(
     private readonly prisma: PrismaService,
     @Inject(WEATHER_PROVIDER) private readonly provider: WeatherProvider,
@@ -62,7 +65,11 @@ export class WeatherService {
       },
     });
 
-    if (cached?.forecastData && Array.isArray(cached.forecastData)) {
+    if (
+      cached?.forecastData &&
+      Array.isArray(cached.forecastData) &&
+      cached.forecastData.length > 0
+    ) {
       return {
         city: input.city?.trim() || `地区${input.regionCode ?? '默认'}`,
         days: (cached.forecastData as unknown as WeatherForecastResult['days']).slice(
@@ -92,9 +99,27 @@ export class WeatherService {
   }
 
   private buildCacheRegionCode(input: WeatherQueryInput) {
-    if (input.regionCode?.trim()) return input.regionCode.trim();
-    if (input.city?.trim()) return `CITY:${input.city.trim()}`;
-    return 'DEFAULT';
+    const providerPrefix = this.provider.constructor?.name === 'RealWeatherProvider' ? 'REAL' : 'MOCK';
+    const rawKey = input.regionCode?.trim()
+      ? `${providerPrefix}:${input.regionCode.trim()}`
+      : input.city?.trim()
+        ? `${providerPrefix}:CITY:${input.city.trim()}`
+        : `${providerPrefix}:DEFAULT`;
+    return this.fitCacheRegionCode(rawKey, providerPrefix);
+  }
+
+  private fitCacheRegionCode(rawKey: string, providerPrefix: string) {
+    if (
+      rawKey.length <= WeatherService.WEATHER_CACHE_REGION_CODE_MAX_LENGTH
+    ) {
+      return rawKey;
+    }
+
+    const shortPrefix = providerPrefix === 'REAL' ? 'RH' : 'MH';
+    const hashLength =
+      WeatherService.WEATHER_CACHE_REGION_CODE_MAX_LENGTH - shortPrefix.length - 1;
+    const hashed = createHash('sha1').update(rawKey).digest('hex').slice(0, hashLength);
+    return `${shortPrefix}:${hashed}`;
   }
 
   private todayDate() {

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Post, Query } from '@nestjs/common';
+﻿import { Body, Controller, Get, Param, ParseIntPipe, Post, Query } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -46,7 +46,7 @@ export class ProductController {
               qrCodeUrl: 'https://trace.orange.local/products/1',
               status: 'listed',
               createdAt: '2026-03-23T10:00:00.000Z',
-              batchName: '2026春-纽荷尔脐橙A区',
+              batchName: '2026春季纽荷尔脐橙A区',
               variety: '纽荷尔脐橙',
               qrcodeGenerated: true,
             },
@@ -63,7 +63,7 @@ export class ProductController {
   }
 
   @Post(':id/qrcode')
-  @ApiOperation({ summary: '生成产品二维码并更新 qrCodeUrl' })
+  @ApiOperation({ summary: '生成产品二维码（优先小程序码，失败回退普通二维码）并更新 qrCodeUrl' })
   @ApiParam({ name: 'id', example: 1, description: '产品 ID' })
   @ApiResponse({
     status: 200,
@@ -79,6 +79,9 @@ export class ProductController {
           traceCode: 'P1-B1001-KS8Q1A',
           qrCodeUrl: 'https://trace.orange.local/products/1',
           qrcodeBase64: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...',
+          qrcodeType: 'mini_program',
+          qrcodeFallback: false,
+          qrcodeFallbackReason: null,
         },
       },
     },

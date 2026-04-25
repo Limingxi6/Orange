@@ -30,15 +30,26 @@ const MOCK_BATCH_DETAIL = {
   }
 }
 
+function _formatDate(value) {
+  if (!value) return ''
+  const text = String(value)
+  if (text.includes('T')) return text.slice(0, 10)
+  return text.length >= 10 ? text.slice(0, 10) : text
+}
+
 function _toUiBatch(item) {
   if (!item) return null
+  const plantDate = _formatDate(item.plantingDate || item.plantDate)
+  const createdDate = _formatDate(item.createdAt)
+  const date = plantDate || createdDate
   return {
     id: item.id,
     name: item.batchNo || item.name || '',
     variety: item.variety || '',
     plotName: item.orchardName || item.plotName || '',
     area: item.area || '',
-    plantDate: item.plantingDate || item.plantDate || '',
+    plantDate: date,
+    date,
     stage: item.stage || '',
     status: item.status || '种植中',
     managerId: item.managerId
@@ -67,14 +78,32 @@ const batchService = {
    * 获取批次列表
    * GET /api/batches
    * @param {{ keyword?, page?, limit?, sort? }} params
+   * @param {{ allowMockFallback?: boolean }} options
    * @returns {Array<{ id, name, variety, plotName, stage, status, plantDate }>}
    */
-  getList(params = {}) {
+  getList(params = {}, options = {}) {
+    const limit = params.limit || params.pageSize
+    const query = {
+      keyword: params.keyword,
+      stage: params.stage,
+      page: params.page,
+      // 兼容 limit / pageSize 双参数
+      limit,
+      pageSize: limit,
+      sort: params.sort
+    }
+
+    const realRequest = () => request({ url: '/api/batches', method: 'GET', data: query }).then((res) => {
+      const list = Array.isArray(res?.list) ? res.list : []
+      return list.map(_toUiBatch)
+    })
+
+    if (options.allowMockFallback === false) {
+      return realRequest()
+    }
+
     return tryReal(
-      () => request({ url: '/api/batches', method: 'GET', data: params }).then((res) => {
-        const list = Array.isArray(res?.list) ? res.list : []
-        return list.map(_toUiBatch)
-      }),
+      realRequest,
       () => {
         let list = MOCK_BATCH_LIST
         if (params.keyword) {

@@ -203,3 +203,23 @@
 .risk-low {
   color: #4CAF50;
 }
+
+.ai-risk-section {
+  margin-top: 10rpx;
+  padding-top: 18rpx;
+  border-top: 1rpx solid #F1F1F1;
+}
+
+.risk-action {
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: #555;
+  line-height: 1.6;
+}
+
+.risk-note {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: #8A6D3B;
+}

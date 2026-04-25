@@ -1,4 +1,4 @@
-<view class="page">
+﻿<view class="page">
   <!-- ====== 全局加载 ====== -->
   <view class="state-loading" wx:if="{{loading}}">
     <van-loading size="48rpx" vertical>加载中...</van-loading>
@@ -53,7 +53,7 @@
           <ec-canvas id="riskChart" canvas-id="riskChart" ec="{{ec}}"></ec-canvas>
         </view>
         <view class="chart-hint">
-          <text class="hint-text">橙线为病害风险指数（0~100），虚线为高风险阈值</text>
+          <text class="hint-text">橙线为病害风险指数（0~100），虚线为高风险阈值。</text>
         </view>
       </block>
     </view>
@@ -78,6 +78,15 @@
       <view class="risk-section">
         <text class="risk-label">管理建议</text>
         <text class="risk-body">{{risk.suggestion}}</text>
+      </view>
+
+      <view class="risk-section ai-risk-section" wx:if="{{risk.aiAdvice}}">
+        <text class="risk-label">智能建议</text>
+        <text class="risk-body">{{risk.aiAdvice.summary}}</text>
+        <view class="risk-action" wx:for="{{risk.aiAdvice.actions}}" wx:key="index">
+          {{index + 1}}. {{item}}
+        </view>
+        <text class="risk-note" wx:if="{{risk.aiAdvice.riskNote}}">{{risk.aiAdvice.riskNote}}</text>
       </view>
     </view>
     <view class="card" wx:elif="{{riskFailed}}">

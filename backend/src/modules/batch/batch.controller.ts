@@ -33,7 +33,9 @@ export class BatchController {
   @ApiQuery({ name: 'keyword', required: false, description: '关键词模糊搜索' })
   @ApiQuery({ name: 'stage', required: false, description: '阶段筛选' })
   @ApiQuery({ name: 'page', required: false, description: '页码', example: 1 })
+  @ApiQuery({ name: 'limit', required: false, description: '每页数量（兼容参数）', example: 10 })
   @ApiQuery({ name: 'pageSize', required: false, description: '每页数量', example: 10 })
+  @ApiQuery({ name: 'sort', required: false, description: '排序（latest/oldest）', example: 'latest' })
   @ApiResponse({
     status: 200,
     description: '查询成功',

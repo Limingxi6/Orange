@@ -1,6 +1,8 @@
 const weatherService = require('../../services/weather')
 const riskService = require('../../services/risk')
 const batchService = require('../../services/batch')
+const traceService = require('../../services/trace')
+const { resolveWeatherLocation } = require('../../utils/location')
 
 Page({
   data: {
@@ -11,10 +13,11 @@ Page({
 
     riskSummary: '',
     riskFailed: false,
+    scanning: false,
 
     quickFunctions: [
       { id: 'recognize', name: '拍照识别', vantIcon: 'photograph', path: '/pages/disease-recognize/index' },
-      { id: 'log', name: '农事日志', vantIcon: 'notes-o', path: '/pages/farming-log/index' },
+      { id: 'scan-trace', name: '扫码溯源', vantIcon: 'scan' },
       { id: 'grade', name: '果实分级', vantIcon: 'gem-o', path: '/pages/fruit-grade/index' },
       { id: 'weather', name: '天气预警', vantIcon: 'umbrella-circle', path: '/pages/risk-warning/index' }
     ],
@@ -23,11 +26,18 @@ Page({
     batchFailed: false
   },
 
-  onLoad() {
+  onShow() {
     this.fetchData()
   },
 
   async fetchData() {
+    const token = wx.getStorageSync('token')
+    if (!token) {
+      this.setData({ loading: false })
+      wx.switchTab({ url: '/pages/mine/index' })
+      return
+    }
+
     this.setData({
       loading: true,
       weatherFailed: false,
@@ -35,10 +45,17 @@ Page({
       batchFailed: false
     })
 
+    let weatherQuery = { regionCode: '30.5928,114.3055', city: '武汉市' }
+    try {
+      weatherQuery = await resolveWeatherLocation()
+    } catch (err) {
+      console.warn('定位失败，回退武汉天气', err)
+    }
+
     const [weatherRes, riskRes, batchRes] = await Promise.allSettled([
-      weatherService.getWeather(),
+      weatherService.getWeather(weatherQuery),
       riskService.getSummary(),
-      batchService.getList({ page: 1, limit: 2, sort: 'latest' })
+      batchService.getList({ page: 1, limit: 2, sort: 'latest' }, { allowMockFallback: false })
     ])
 
     const update = { loading: false }
@@ -81,10 +98,59 @@ Page({
   },
 
   onQuickFunctionTap(e) {
+    const id = e.currentTarget.dataset.id
+    if (id === 'scan-trace') {
+      this.onScanTraceCode()
+      return
+    }
+
     const path = e.currentTarget.dataset.path
     if (path) {
+      if (path === '/pages/disease-recognize/index') {
+        const recentBatchId = wx.getStorageSync('recentBatchId')
+        if (recentBatchId) {
+          wx.navigateTo({ url: `${path}?batchId=${recentBatchId}` })
+          return
+        }
+      }
       wx.navigateTo({ url: path })
     }
+  },
+
+  onScanTraceCode() {
+    if (this.data.scanning) return
+
+    this.setData({ scanning: true })
+    wx.scanCode({
+      scanType: ['qrCode'],
+      success: (res) => {
+        const traceCode = traceService.extractTraceCode(res.result)
+        if (!traceCode) {
+          wx.showToast({ title: '未识别到有效溯源码', icon: 'none' })
+          return
+        }
+
+        const tracePath = traceService.buildTraceViewPath(traceCode)
+        if (!tracePath) {
+          wx.showToast({ title: '未识别到有效溯源码', icon: 'none' })
+          return
+        }
+
+        wx.navigateTo({ url: tracePath })
+      },
+      fail: (err) => {
+        if (this._isScanCancel(err)) return
+        wx.showToast({ title: '扫码失败，请重试', icon: 'none' })
+      },
+      complete: () => {
+        this.setData({ scanning: false })
+      },
+    })
+  },
+
+  _isScanCancel(err) {
+    const errMsg = String((err && err.errMsg) || '').toLowerCase()
+    return errMsg.includes('cancel')
   },
 
   onBatchTap(e) {

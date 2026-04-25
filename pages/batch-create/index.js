@@ -65,14 +65,23 @@ Page({
     this.setData({ submitting: true })
     try {
       await batchService.create(payload)
+      const app = getApp()
+      if (app && app.globalData) {
+        app.globalData.batchListShouldRefresh = true
+      }
       wx.showToast({ title: '创建成功', icon: 'success' })
       setTimeout(() => {
         const pages = getCurrentPages()
         const prevPage = pages[pages.length - 2]
-        if (prevPage && prevPage.fetchList) {
+        if (prevPage && typeof prevPage.fetchList === 'function') {
           prevPage.fetchList()
         }
-        wx.navigateBack()
+        if (prevPage && typeof prevPage.fetchData === 'function') {
+          prevPage.fetchData()
+        }
+        wx.navigateBack({
+          fail: () => wx.switchTab({ url: '/pages/home/index' })
+        })
       }, 800)
     } catch (err) {
       if (!err._toasted) {

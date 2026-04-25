@@ -3,7 +3,7 @@
 }
 
 .page-header {
-  margin-bottom: 32rpx;
+  margin-bottom: 24rpx;
 }
 
 .page-title {
@@ -18,6 +18,46 @@
   font-size: 24rpx;
   color: #999;
   margin-top: 8rpx;
+  line-height: 1.5;
+}
+
+.scan-entry {
+  background: linear-gradient(135deg, #fff8ef, #fff2dc);
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-bottom: 24rpx;
+  display: flex;
+  gap: 16rpx;
+  align-items: center;
+}
+
+.scan-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.scan-title {
+  display: block;
+  font-size: 30rpx;
+  color: #333;
+  font-weight: 600;
+}
+
+.scan-desc {
+  display: block;
+  font-size: 24rpx;
+  color: #888;
+  margin-top: 8rpx;
+  line-height: 1.5;
+}
+
+.scan-btn {
+  flex-shrink: 0;
+  padding: 14rpx 22rpx;
+  border-radius: 10rpx;
+  background: #ff8c00;
+  color: #fff;
+  font-size: 24rpx;
 }
 
 .product-card {
@@ -57,13 +97,13 @@
 }
 
 .tag-success {
-  background: #E8F5E9;
-  color: #4CAF50;
+  background: #e8f5e9;
+  color: #4caf50;
 }
 
 .tag-pending {
-  background: #FFF3E0;
-  color: #FF9800;
+  background: #fff3e0;
+  color: #ff9800;
 }
 
 .product-detail {
@@ -77,32 +117,63 @@
   justify-content: space-between;
   align-items: center;
   padding: 8rpx 0;
+  gap: 20rpx;
 }
 
 .detail-label {
   font-size: 26rpx;
   color: #999;
+  flex-shrink: 0;
 }
 
 .detail-value {
   font-size: 26rpx;
   color: #333;
   font-weight: 500;
+  text-align: right;
+  word-break: break-all;
 }
 
 .detail-value.price {
-  color: #FF8C00;
+  color: #ff8c00;
   font-weight: 600;
+}
+
+.detail-value.code {
+  color: #666;
+  font-family: 'Courier New', monospace;
+  font-size: 22rpx;
+}
+
+.detail-code-wrap {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.copy-inline {
+  flex-shrink: 0;
+  color: #ff8c00;
+  font-size: 22rpx;
+}
+
+.copy-inline.disabled {
+  color: #bbb;
+  pointer-events: none;
 }
 
 .product-actions {
   display: flex;
-  gap: 16rpx;
+  flex-wrap: wrap;
+  gap: 12rpx;
   margin-top: 20rpx;
 }
 
 .action-btn {
-  flex: 1;
+  width: calc(50% - 6rpx);
   text-align: center;
   padding: 16rpx 0;
   border-radius: 10rpx;
@@ -112,11 +183,12 @@
 }
 
 .action-btn.primary {
-  background: #FF8C00;
+  background: #ff8c00;
   color: #fff;
 }
 
-.action-btn.disabled {
+.action-btn.disabled,
+.scan-btn.disabled {
   opacity: 0.5;
   pointer-events: none;
 }

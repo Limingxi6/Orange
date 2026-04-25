@@ -1,7 +1,13 @@
 <view class="page">
   <!-- 缺少批次 ID -->
   <view class="state-error" wx:if="{{noBatchId}}">
-    <van-empty description="请从批次详情进入查看日志" image="search" />
+    <van-empty description="这是按批次查看的农事日志页，请先选择批次" image="search">
+      <view class="empty-actions">
+        <van-button round type="warning" size="small" color="#FF8C00" bindclick="onGoBatchList">去批次列表</van-button>
+        <van-button round plain hairline type="warning" size="small" color="#FF8C00" bindclick="onAddLog">直接新建日志</van-button>
+        <van-button round plain hairline type="default" size="small" bindclick="onGoBack">返回上一页</van-button>
+      </view>
+    </van-empty>
   </view>
 
   <!-- 加载中 -->
@@ -52,7 +58,7 @@
   </block>
 
   <!-- ====== 悬浮新增按钮 ====== -->
-  <view class="fab" bindtap="onAddLog">
+  <view class="fab" wx:if="{{!noBatchId}}" bindtap="onAddLog">
     <van-icon name="plus" color="#fff" size="44rpx" />
   </view>
 
@@ -73,25 +79,26 @@
         <van-cell title="操作类型">
           <van-tag slot="right-icon" type="warning" plain round>{{detailItem.typeText || detailItem.type}}</van-tag>
         </van-cell>
-        <van-cell title="记录时间" value="{{detailItem.time}}" />
+        <van-cell title="记录时间" value="{{detailItem.displayTime || detailItem.time}}" />
+        <van-cell title="来源" value="{{detailItem.displaySource}}" />
         <van-cell title="操作人" value="{{detailItem.operator || '--'}}" wx:if="{{detailItem.operator}}" />
       </van-cell-group>
 
       <view class="detail-section">
         <text class="detail-label">摘要</text>
-        <text class="detail-content">{{detailItem.content}}</text>
+        <text class="detail-content">{{detailItem.displayContent || detailItem.content || '暂无日志摘要'}}</text>
       </view>
 
-      <view class="detail-section" wx:if="{{detailItem.detail}}">
+      <view class="detail-section">
         <text class="detail-label">详细描述</text>
-        <text class="detail-content">{{detailItem.detail}}</text>
+        <text class="detail-content">{{detailItem.displayDetail || detailItem.detail || '暂无详细描述'}}</text>
       </view>
 
-      <view class="detail-section" wx:if="{{detailItem.images && detailItem.images.length > 0}}">
+      <view class="detail-section" wx:if="{{detailItem.displayImages.length > 0}}">
         <text class="detail-label">图片记录</text>
         <view class="detail-images">
           <image
-            wx:for="{{detailItem.images}}"
+            wx:for="{{detailItem.displayImages}}"
             wx:key="*this"
             class="detail-img"
             src="{{item}}"

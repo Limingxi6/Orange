@@ -153,3 +153,28 @@
   color: #999;
   line-height: 1.5;
 }
+
+.ai-recommend-card {
+  margin-top: 20rpx;
+}
+
+.ai-summary {
+  display: block;
+  font-size: 26rpx;
+  color: #444;
+  line-height: 1.6;
+}
+
+.ai-action {
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: #555;
+  line-height: 1.6;
+}
+
+.ai-risk {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: #8A6D3B;
+}

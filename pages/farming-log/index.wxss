@@ -57,6 +57,14 @@
   padding: 8rpx 24rpx 0;
 }
 
+.empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  margin-top: 12rpx;
+  justify-content: center;
+}
+
 /* ====== 悬浮按钮 ====== */
 .fab {
   position: fixed;

@@ -1,6 +1,7 @@
 {
   "setting": {
     "es6": true,
+    "urlCheck": false,
     "postcss": true,
     "minified": true,
     "uglifyFileName": false,
@@ -18,19 +19,60 @@
       "outputPath": ""
     },
     "useCompilerPlugins": false,
-    "minifyWXML": true
+    "minifyWXML": true,
+    "compileWorklet": false,
+    "uploadWithSourceMap": true,
+    "minifyWXSS": true,
+    "localPlugins": false,
+    "disableUseStrict": false,
+    "condition": false,
+    "swc": false,
+    "disableSWC": true
   },
   "compileType": "miniprogram",
   "simulatorPluginLibVersion": {},
   "packOptions": {
     "ignore": [
       {
-        "type": "folder",
-        "value": "backend"
+        "value": "backend",
+        "type": "folder"
+      },
+      {
+        "value": "ai",
+        "type": "folder"
+      },
+      {
+        "value": ".git",
+        "type": "folder"
+      },
+      {
+        "value": ".cursor",
+        "type": "folder"
+      },
+      {
+        "value": "docs",
+        "type": "folder"
+      },
+      {
+        "value": "node_modules",
+        "type": "folder"
+      },
+      {
+        "value": "AGENTS.md",
+        "type": "file"
+      },
+      {
+        "value": "plan.md",
+        "type": "file"
+      },
+      {
+        "value": "docs.zip",
+        "type": "file"
       }
     ],
     "include": []
   },
-  "appid": "wxf048ee4e519a5598",
-  "editorSetting": {}
+  "appid": "wx06743b6d47362189",
+  "editorSetting": {},
+  "libVersion": "3.15.0"
 }
