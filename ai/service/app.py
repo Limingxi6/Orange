@@ -49,7 +49,7 @@ def health() -> Dict[str, Any]:
         "service": "orange-ai-http",
         "mode": "local-disease-model-primary-plus-llm-advice",
         "externalApiEnabled": settings.external_api_enabled,
-        "modelReady": bool(settings.disease_model_path) or (PROJECT_ROOT / "models" / "disease_classifier.pt").exists(),
+        "modelReady": bool(settings.disease_model_path) or (PROJECT_ROOT / "models" / "disease_classifier_leaves.pt").exists(),
         "routes": [
             "/predict/disease",
             "/predict/fruit",

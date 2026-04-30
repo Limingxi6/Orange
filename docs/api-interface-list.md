@@ -1,6 +1,6 @@
 ﻿# 橘源通 API 接口清单（按当前代码）
 
-更新时间：2026-04-22  
+更新时间：2026-04-26  
 适用范围：`pages/*` + `services/*` + `backend/src/modules/*`
 
 ## 统一约定
@@ -32,6 +32,7 @@
 | 详情 | GET | `/api/batches/:id` | `id` |
 | 创建 | POST | `/api/batches` | `batchNo? orchardName variety plantingDate ...` |
 | 阶段更新 | PUT | `/api/batches/:id/stage` | `stage` |
+| 删除 | DELETE | `/api/batches/:id` | 仅 `admin` 或批次负责人；事务内级联删除日志/病害/风险/分级/产品/溯源关联数据 |
 
 ## 3. 农事日志
 
@@ -52,7 +53,7 @@
 稳定关键输出（兼容字段）：
 
 - `label`
-- `confidence`
+- `confidence`（对外展示/LLM 入参使用校准值，保持在 0.80-0.97）
 - `severity`
 - `advice`
 - `needManualReview`

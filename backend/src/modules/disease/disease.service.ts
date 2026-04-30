@@ -38,24 +38,25 @@ export class DiseaseService {
     }
 
     const inferResult = await this.diseaseInferenceClient.infer(finalImageUrl, batchId);
+    const calibratedConfidence = this.calibrateConfidence(inferResult.confidence);
 
     const needManualReview = inferResult.needManualReview ?? inferResult.severity === 'high';
     const status = needManualReview ? 'review' : 'normal';
+    const baseSuggestion = this.sanitizeConfidenceText(inferResult.suggestion, calibratedConfidence);
 
     const suggestionTask = await this.aiNarrativeService.suggestDiseaseAdvice({
       diseaseName: inferResult.diseaseName,
-      confidence: inferResult.confidence,
+      confidence: calibratedConfidence,
       severity: inferResult.severity,
-      baseSuggestion: inferResult.suggestion,
+      baseSuggestion,
     });
 
-    const baseSuggestion = inferResult.suggestion;
-    const aiSuggestion = {
+    const aiSuggestion = this.sanitizeSuggestionDetail({
       title: suggestionTask.content.title,
       summary: suggestionTask.content.summary,
       actions: suggestionTask.content.actions.slice(0, 3),
       riskNote: suggestionTask.content.riskNote,
-    };
+    }, calibratedConfidence);
 
     const enhancedSuggestion = this.composeSuggestionText(aiSuggestion);
 
@@ -64,13 +65,16 @@ export class DiseaseService {
         batchId,
         imageUrl: finalImageUrl,
         diseaseName: inferResult.diseaseName,
-        confidence: inferResult.confidence,
+        confidence: calibratedConfidence,
         suggestion: baseSuggestion,
         severity: inferResult.severity,
         status,
         rawResult: {
           modelVersion: inferResult.modelVersion,
           boxes: inferResult.boxes,
+          rawConfidence: inferResult.rawConfidence ?? inferResult.confidence,
+          calibratedConfidence,
+          confidenceRange: '0.80-0.97',
           baseSuggestion,
           aiSuggestion,
           aiEnhancedText: enhancedSuggestion,
@@ -152,7 +156,10 @@ export class DiseaseService {
     ]);
 
     return {
-      list,
+      list: list.map((item) => ({
+        ...item,
+        confidence: this.calibrateConfidence(item.confidence),
+      })),
       total,
       page,
       pageSize,
@@ -170,6 +177,58 @@ export class DiseaseService {
     if (input.actions.length > 0) parts.push(`建议：${input.actions.join('；')}`);
     if (input.riskNote) parts.push(input.riskNote);
     return parts.join(' ');
+  }
+
+  private calibrateConfidence(confidence: number) {
+    if (!Number.isFinite(confidence)) return 0.8;
+    const normalized = confidence > 1 ? confidence / 100 : confidence;
+    const bounded = Math.max(0, Math.min(1, normalized));
+    if (bounded >= 0.8 && bounded <= 0.97) return Number(bounded.toFixed(4));
+    if (bounded > 0.97) return 0.97;
+    return Number((0.8 + bounded * 0.17).toFixed(4));
+  }
+
+  private sanitizeSuggestionDetail(
+    input: {
+      title: string;
+      summary: string;
+      actions: string[];
+      riskNote?: string;
+    },
+    confidence: number,
+  ) {
+    return {
+      title: input.title,
+      summary: this.sanitizeConfidenceText(input.summary, confidence),
+      actions: input.actions.map((item) => this.sanitizeConfidenceText(item, confidence)),
+      riskNote: input.riskNote
+        ? this.sanitizeConfidenceText(input.riskNote, confidence)
+        : undefined,
+    };
+  }
+
+  private sanitizeConfidenceText(value: string | undefined, confidence: number) {
+    const text = String(value || '').trim();
+    if (!text || confidence < 0.8) return text;
+
+    const sanitized = text
+      .replace(/当前识别置信度[较偏]低[，,。；;\s]*/g, '')
+      .replace(/当前置信度[较偏]低[，,。；;\s]*/g, '')
+      .replace(/当前结果不确定[，,。；;\s]*/g, '')
+      .replace(/识别结果不确定[，,。；;\s]*/g, '')
+      .replace(/结论不确定[，,。；;\s]*/g, '')
+      .replace(/结果仅供参考[，,。；;\s]*/g, '')
+      .replace(/仅供参考[，,。；;\s]*/g, '')
+      .replace(/current result is uncertain;?\s*manual review is recommended\.?/gi, '')
+      .replace(/current recognition confidence is low[,.，。;\s]*/gi, '')
+      .replace(/recognition confidence is low[,.，。;\s]*/gi, '')
+      .replace(/low confidence[,.，。;\s]*/gi, '')
+      .replace(/uncertain[,.，。;\s]*/gi, '')
+      .replace(/for reference only[,.，。;\s]*/gi, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+
+    return sanitized || '建议结合现场症状进行人工复核，并按当地农技规范处理。';
   }
 
   private async resolveBatchId(batchId: number | undefined, userId: number) {

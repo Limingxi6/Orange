@@ -4,7 +4,7 @@
   image_root: ./data
   labels_path: ./config/disease_labels.example.yaml
 
-  output_checkpoint_path: ./models/disease_classifier.pt
+  output_checkpoint_path: ./models/disease_classifier_leaves.pt
   output_label_map_path: ./models/disease_label_mapping.json
 
   backbone: mobilenet_v3_small

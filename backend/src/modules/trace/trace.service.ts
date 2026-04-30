@@ -359,7 +359,17 @@ export class TraceService {
   ) {
     const existingByCode = await this.prisma.traceRecord.findUnique({
       where: { traceCode },
-      select: { id: true },
+      select: {
+        id: true,
+        proofHash: true,
+        chainHash: true,
+        anchorStatus: true,
+        txId: true,
+        blockNumber: true,
+        chainProvider: true,
+        chainNetwork: true,
+        anchoredAt: true,
+      },
     });
 
     if (existingByCode && !forceRegenerate) {
@@ -401,6 +411,23 @@ export class TraceService {
       snapshotVersion: TRACE_PROOF_SNAPSHOT_VERSION,
       generatedAt,
     };
+    const existingAnchorStatus = this.normalizeAnchorStatus(existingByCode?.anchorStatus);
+    const existingProofHash = existingByCode
+      ? this.resolveProofHash(existingByCode.proofHash, existingByCode.chainHash)
+      : null;
+    const existingSuccessfulAnchor =
+      existingByCode &&
+      existingAnchorStatus === TRACE_ANCHOR_STATUS.SUCCESS &&
+      existingProofHash === generatedProof.proofHash
+        ? {
+            anchorStatus: existingAnchorStatus,
+            txId: existingByCode.txId,
+            blockNumber: existingByCode.blockNumber,
+            chainProvider: existingByCode.chainProvider,
+            chainNetwork: existingByCode.chainNetwork,
+            anchoredAt: existingByCode.anchoredAt,
+          }
+        : null;
 
     const proofWriteData = {
       proofType: generatedProof.proofType,
@@ -410,12 +437,12 @@ export class TraceService {
       verified: true,
       verifiedAt: generatedAt,
       verifyMessage: TRACE_VERIFY_MESSAGE.GENERATED,
-      anchorStatus: TRACE_ANCHOR_STATUS.NOT_ANCHORED,
-      txId: null,
-      blockNumber: null,
-      chainProvider: null,
-      chainNetwork: null,
-      anchoredAt: null,
+      anchorStatus: existingSuccessfulAnchor?.anchorStatus ?? TRACE_ANCHOR_STATUS.NOT_ANCHORED,
+      txId: existingSuccessfulAnchor?.txId ?? null,
+      blockNumber: existingSuccessfulAnchor?.blockNumber ?? null,
+      chainProvider: existingSuccessfulAnchor?.chainProvider ?? null,
+      chainNetwork: existingSuccessfulAnchor?.chainNetwork ?? null,
+      anchoredAt: existingSuccessfulAnchor?.anchoredAt ?? null,
     } as const;
     let traceRecordId: number | null = null;
 
@@ -479,7 +506,13 @@ export class TraceService {
     }
 
     // Local hash proof is the primary path; EVM anchoring is a non-blocking enhancement.
-    await this.enhanceTraceRecordWithAnchor(traceRecordId, anchorInput);
+    if (existingSuccessfulAnchor) {
+      this.logger.log(
+        `Trace anchor skipped traceCode=${traceCode}, anchorStatus=${TRACE_ANCHOR_STATUS.SUCCESS}, reason=already_anchored_locally`,
+      );
+    } else {
+      await this.enhanceTraceRecordWithAnchor(traceRecordId, anchorInput);
+    }
     return this.loadTraceRecordInfoOrThrow(traceRecordId);
   }
 

@@ -1,0 +1,111 @@
+<view class="page">
+  <!-- 缺少批次 ID -->
+  <view class="state-error" wx:if="{{noBatchId}}">
+    <van-empty description="这是按批次查看的农事日志页，请先选择批次" image="search">
+      <view class="empty-actions">
+        <van-button round type="warning" size="small" color="#FF8C00" bindclick="onGoBatchList">去批次列表</van-button>
+        <van-button round plain hairline type="warning" size="small" color="#FF8C00" bindclick="onAddLog">直接新建日志</van-button>
+        <van-button round plain hairline type="default" size="small" bindclick="onGoBack">返回上一页</van-button>
+      </view>
+    </van-empty>
+  </view>
+
+  <!-- 加载中 -->
+  <view class="state-loading" wx:elif="{{loading}}">
+    <van-loading size="48rpx" vertical>加载中...</van-loading>
+  </view>
+
+  <!-- 加载失败 -->
+  <view class="state-error" wx:elif="{{loadFailed}}">
+    <van-empty description="加载失败，请检查网络">
+      <van-button round type="warning" size="small" color="#FF8C00" bindclick="onRetry" custom-class="retry-btn">重新加载</van-button>
+    </van-empty>
+  </view>
+
+  <!-- 正常内容 -->
+  <block wx:else>
+    <!-- ====== 筛选标签 ====== -->
+    <scroll-view class="filter-scroll" scroll-x enhanced show-scrollbar="{{false}}">
+      <view class="filter-row">
+        <view
+          wx:for="{{filterTabs}}"
+          wx:key="value"
+          class="filter-chip {{currentFilter === item.value ? 'active' : ''}}"
+          data-value="{{item.value}}"
+          bindtap="onFilterTap"
+        >
+          <van-icon name="{{item.icon}}" size="28rpx" custom-class="chip-icon" />
+          <text>{{item.label}}</text>
+        </view>
+      </view>
+    </scroll-view>
+
+    <!-- ====== 统计 ====== -->
+    <view class="stat-bar">
+      <text class="stat-text">共 {{filteredLogs.length}} 条日志</text>
+    </view>
+
+    <!-- ====== 时间线 ====== -->
+    <view class="timeline-wrapper" wx:if="{{filteredLogs.length > 0}}">
+      <log-timeline logs="{{filteredLogs}}" bind:itemtap="onLogItemTap" />
+    </view>
+
+    <van-empty
+      wx:if="{{filteredLogs.length === 0}}"
+      description="该类型暂无日志记录"
+      image="search"
+    />
+  </block>
+
+  <!-- ====== 悬浮新增按钮 ====== -->
+  <view class="fab" wx:if="{{!noBatchId}}" bindtap="onAddLog">
+    <van-icon name="plus" color="#fff" size="44rpx" />
+  </view>
+
+  <!-- ====== 日志详情弹窗 ====== -->
+  <van-popup
+    show="{{showDetail}}"
+    position="bottom"
+    round
+    closeable
+    safe-area-inset-bottom
+    bind:close="onCloseDetail"
+    custom-style="max-height:75vh;"
+  >
+    <view class="detail-popup" wx:if="{{detailItem}}">
+      <view class="detail-title">日志详情</view>
+
+      <van-cell-group inset>
+        <van-cell title="操作类型">
+          <van-tag slot="right-icon" type="warning" plain round>{{detailItem.typeText || detailItem.type}}</van-tag>
+        </van-cell>
+        <van-cell title="记录时间" value="{{detailItem.displayTime || detailItem.time}}" />
+        <van-cell title="来源" value="{{detailItem.displaySource}}" />
+        <van-cell title="操作人" value="{{detailItem.operator || '--'}}" wx:if="{{detailItem.operator}}" />
+      </van-cell-group>
+
+      <view class="detail-section">
+        <text class="detail-label">摘要</text>
+        <text class="detail-content">{{detailItem.displayContent || detailItem.content || '暂无日志摘要'}}</text>
+      </view>
+
+      <view class="detail-section">
+        <text class="detail-label">详细描述</text>
+        <text class="detail-content">{{detailItem.displayDetail || detailItem.detail || '暂无详细描述'}}</text>
+      </view>
+
+      <view class="detail-section" wx:if="{{detailItem.displayImages.length > 0}}">
+        <text class="detail-label">图片记录</text>
+        <view class="detail-images">
+          <image
+            wx:for="{{detailItem.displayImages}}"
+            wx:key="*this"
+            class="detail-img"
+            src="{{item}}"
+            mode="aspectFill"
+          />
+        </view>
+      </view>
+    </view>
+  </van-popup>
+</view>

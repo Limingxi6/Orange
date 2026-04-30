@@ -1,0 +1,8 @@
+﻿{
+  "image_path": "./data/images/test/mite_002.jpg",
+  "batch_id": "1001",
+  "crop_type": "柑橘",
+  "growth_stage": "果实膨大期",
+  "weather": "未来3天有降雨，湿度较高",
+  "region": "湖北宜昌"
+}

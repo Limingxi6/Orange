@@ -34,7 +34,7 @@ class TrainConfig:
     source_type: str = "csv"
     image_root: str | None = None
     labels_path: str | None = None
-    output_checkpoint_path: str = "./models/disease_classifier.pt"
+    output_checkpoint_path: str = "./models/disease_classifier_leaves.pt"
     output_label_map_path: str = "./models/disease_label_mapping.json"
     backbone: str = "mobilenet_v3_small"
     pretrained: bool = False
@@ -349,6 +349,6 @@ if __name__ == "__main__":
     sample_cfg = TrainConfig(
         source="./data/disease_labels.sample.csv",
         source_type="csv",
-        output_checkpoint_path="./models/disease_classifier.pt",
+        output_checkpoint_path="./models/disease_classifier_leaves.pt",
     )
     print(json.dumps(train_disease_model(sample_cfg), ensure_ascii=False, indent=2))

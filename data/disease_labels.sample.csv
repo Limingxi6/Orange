@@ -1,0 +1,11 @@
+﻿image_path,label,split
+./images/train/normal_001.jpg,normal,train
+./images/train/normal_002.jpg,normal,train
+./images/train/canker_001.jpg,canker,train
+./images/train/canker_002.jpg,canker,train
+./images/train/anthracnose_001.jpg,anthracnose,train
+./images/train/mite_001.jpg,mite,train
+./images/val/normal_003.jpg,normal,val
+./images/val/canker_003.jpg,canker,val
+./images/test/anthracnose_002.jpg,anthracnose,test
+./images/test/mite_002.jpg,mite,test

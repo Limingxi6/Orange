@@ -153,7 +153,7 @@ def evaluate_disease_model(
 if __name__ == "__main__":
     # TODO: 后续补充混淆矩阵和错误样本导出能力。
     result = evaluate_disease_model(
-        model_path="./models/disease_classifier.pt",
+        model_path="./models/disease_classifier_leaves.pt",
         source="./data/disease_labels.sample.csv",
         source_type="csv",
     )

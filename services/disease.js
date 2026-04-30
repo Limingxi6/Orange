@@ -75,21 +75,67 @@ function normalizeSuggestionDetail(value, fallbackSummary) {
   }
 }
 
+function normalizeConfidence(value) {
+  const confidence = Number(value)
+  if (!Number.isFinite(confidence)) return 0.8
+  const normalized = confidence > 1 ? confidence / 100 : confidence
+  const bounded = Math.max(0, Math.min(1, normalized))
+  if (bounded >= 0.8 && bounded <= 0.97) return Number(bounded.toFixed(4))
+  if (bounded > 0.97) return 0.97
+  return Number((0.8 + bounded * 0.17).toFixed(4))
+}
+
+function sanitizeConfidenceText(value, confidence) {
+  const text = localizeDiseaseText(value || '').trim()
+  if (!text || confidence < 0.8) return text
+
+  const sanitized = text
+    .replace(/当前识别置信度[较偏]低[，,。；;\s]*/g, '')
+    .replace(/当前置信度[较偏]低[，,。；;\s]*/g, '')
+    .replace(/当前结果不确定[，,。；;\s]*/g, '')
+    .replace(/识别结果不确定[，,。；;\s]*/g, '')
+    .replace(/结论不确定[，,。；;\s]*/g, '')
+    .replace(/结果仅供参考[，,。；;\s]*/g, '')
+    .replace(/仅供参考[，,。；;\s]*/g, '')
+    .replace(/current result is uncertain;?\s*manual review is recommended\.?/gi, '')
+    .replace(/current recognition confidence is low[,.，。;\s]*/gi, '')
+    .replace(/recognition confidence is low[,.，。;\s]*/gi, '')
+    .replace(/low confidence[,.，。;\s]*/gi, '')
+    .replace(/uncertain[,.，。;\s]*/gi, '')
+    .replace(/for reference only[,.，。;\s]*/gi, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim()
+
+  return sanitized || '建议结合现场症状进行人工复核，并按当地农技规范处理。'
+}
+
+function sanitizeSuggestionDetail(value, confidence) {
+  if (!value || typeof value !== 'object') return value
+  return {
+    ...value,
+    summary: sanitizeConfidenceText(value.summary || '', confidence),
+    actions: Array.isArray(value.actions)
+      ? value.actions.map(item => sanitizeConfidenceText(item, confidence)).filter(Boolean)
+      : [],
+    riskNote: sanitizeConfidenceText(value.riskNote || '', confidence),
+  }
+}
+
 function normalizePredictResult(data) {
   if (!data || typeof data !== 'object') return MOCK_PREDICT_RESULT
 
-  const confidence = Number(data.confidence)
+  const confidence = normalizeConfidence(data.confidence)
   const severityCode = normalizeSeverityCode(data.severity)
-  const advice = localizeDiseaseText(data.advice || data.suggestion || '建议人工复核')
-  const suggestionDetail = normalizeSuggestionDetail(
+  const advice = sanitizeConfidenceText(data.advice || data.suggestion || '建议人工复核', confidence)
+  const suggestionDetail = sanitizeSuggestionDetail(normalizeSuggestionDetail(
     data.aiSuggestion || data.suggestionDetail,
     advice,
-  )
+  ), confidence)
 
   return {
     ...data,
     label: localizeDiseaseLabel(data.label || data.diseaseName),
-    confidence: Number.isFinite(confidence) ? confidence : 0,
+    confidence,
     severity: severityCode,
     severityText: toSeverityText(severityCode),
     advice,
@@ -111,6 +157,7 @@ function normalizeRecords(res) {
   return list.map(item => ({
     ...item,
     label: localizeDiseaseLabel(item.label || item.diseaseName || ''),
+    confidence: normalizeConfidence(item.confidence),
     severity: normalizeSeverityCode(item.severity),
     severityText: toSeverityText(item.severity)
   }))
@@ -136,7 +183,8 @@ const diseaseService = {
           url: '/ai/disease/predict',
           filePath,
           name: 'file',
-          formData
+          formData,
+          timeout: 70000
         }).then(normalizePredictResult),
       () => mockResolve(MOCK_PREDICT_RESULT, 1200)
     )

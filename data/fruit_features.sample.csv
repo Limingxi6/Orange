@@ -1,0 +1,4 @@
+﻿fruit_id,color_score,defect_ratio,size_score,maturity_score,grade,target_price
+f001,91,0.03,88,90,A,8.1
+f002,84,0.06,79,82,B,6.7
+f003,71,0.13,68,70,C,4.9

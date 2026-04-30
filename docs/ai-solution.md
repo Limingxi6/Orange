@@ -14,6 +14,7 @@
 
 - 后端入口：`POST /ai/disease/predict`、`POST /api/disease/predict`。
 - 主链路：上传 -> `DiseaseInferenceClient` -> `DiseaseRecord` 落库。
+- 置信度：对外响应与 LLM 建议入参使用校准值，保持在 0.80-0.97；原始模型置信度保留在 `rawResult.rawConfidence`。
 - 解释增强：`AiNarrativeService.explainDiseaseResult()`。
 - 回退：远程推理不可用时由推理客户端回退。
 

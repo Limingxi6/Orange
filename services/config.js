@@ -14,8 +14,10 @@ const ENV_MAP = {
 
 const DEV_BASE_URL_STORAGE_KEY = 'devBaseUrl'
 // Real-device default must be reachable from phone. Keep simulator on ENV_MAP.dev.
-const DEFAULT_LAN_BASE_URL = 'http://192.168.1.103:8080'
+const DEFAULT_LAN_BASE_URL = 'https://qualifications-projectors-zen-bottom.trycloudflare.com'
 const LEGACY_LAN_BASE_URLS = [
+  'http://10.162.37.191:8080',
+  'http://192.168.1.103:8080',
   'http://33323s3q04.vicp.fun:18080',
   'http://33323s3q04.vicp.fun:29805'
 ]

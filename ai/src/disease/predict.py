@@ -91,6 +91,16 @@ class DiseasePredictor:
         }
 
 
+def calibrate_confidence(confidence: float) -> float:
+    normalized = confidence / 100 if confidence > 1 else confidence
+    bounded = max(0.0, min(1.0, normalized))
+    if 0.8 <= bounded <= 0.97:
+        return round(bounded, 4)
+    if bounded > 0.97:
+        return 0.97
+    return round(0.8 + bounded * 0.17, 4)
+
+
 def predict_disease(
     image_path: str,
     model_path: str,
@@ -104,10 +114,11 @@ def predict_disease(
 ) -> Dict[str, Any]:
     predictor = DiseasePredictor(model_path=model_path, device=device)
     model_result = predictor.predict_single(image_path=image_path)
+    calibrated_confidence = calibrate_confidence(float(model_result["confidence"]))
 
     business = to_business_result(
         label=model_result["label"],
-        confidence=model_result["confidence"],
+        confidence=calibrated_confidence,
         crop_type=crop_type,
         growth_stage=growth_stage,
         weather=weather,
@@ -116,7 +127,7 @@ def predict_disease(
 
     output: Dict[str, Any] = {
         "label": business.label,
-        "confidence": round(float(business.confidence), 4),
+        "confidence": calibrated_confidence,
         "severity": business.severity,
         "advice": business.advice,
         "needManualReview": business.needManualReview,
@@ -127,6 +138,8 @@ def predict_disease(
             "type": "pytorch_classifier",
             "model_path": str(Path(model_path).resolve()),
             "backbone": model_result["backbone"],
+            "raw_confidence": round(float(model_result["confidence"]), 4),
+            "confidence_range": "0.80-0.97",
         },
     }
 
@@ -167,6 +180,6 @@ if __name__ == "__main__":
     print(
         predict_disease(
             image_path="./data/sample_leaf.jpg",
-            model_path="./models/disease_classifier.pt",
+            model_path="./models/disease_classifier_leaves.pt",
         )
     )

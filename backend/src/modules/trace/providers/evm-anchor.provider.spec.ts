@@ -106,4 +106,69 @@ describe('EvmAnchorProvider', () => {
       '0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
     );
   });
+
+  it('treats duplicate anchor as success when chain proof hash matches', async () => {
+    const provider = createProvider({
+      'trace.evm.chainName': 'sepolia',
+    });
+    const proofHash = 'c'.repeat(64);
+
+    (
+      provider as unknown as {
+        contract: {
+          anchorTrace: jest.Mock;
+          getAnchor: jest.Mock;
+        };
+      }
+    ).contract = {
+      anchorTrace: jest
+        .fn()
+        .mockRejectedValue(new Error('execution reverted: "trace already anchored"')),
+      getAnchor: jest.fn().mockResolvedValue(['P1-B1001-KS8Q1A', proofHash, 1776763800n]),
+    };
+
+    const result = await provider.anchorProof({
+      traceCode: 'P1-B1001-KS8Q1A',
+      proofHash,
+      snapshotVersion: 1,
+      generatedAt: new Date('2026-04-21T09:30:00.000Z'),
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.anchorStatus).toBe(TRACE_ANCHOR_STATUS.SUCCESS);
+    expect(result.anchoredAt).toEqual(new Date('2026-04-21T09:30:00.000Z'));
+  });
+
+  it('keeps duplicate anchor failed when chain proof hash differs', async () => {
+    const provider = createProvider({
+      'trace.evm.chainName': 'sepolia',
+    });
+
+    (
+      provider as unknown as {
+        contract: {
+          anchorTrace: jest.Mock;
+          getAnchor: jest.Mock;
+        };
+      }
+    ).contract = {
+      anchorTrace: jest
+        .fn()
+        .mockRejectedValue(new Error('execution reverted: "trace already anchored"')),
+      getAnchor: jest
+        .fn()
+        .mockResolvedValue(['P1-B1001-KS8Q1A', 'd'.repeat(64), 1776763800n]),
+    };
+
+    const result = await provider.anchorProof({
+      traceCode: 'P1-B1001-KS8Q1A',
+      proofHash: 'c'.repeat(64),
+      snapshotVersion: 1,
+      generatedAt: new Date('2026-04-21T09:30:00.000Z'),
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.anchorStatus).toBe(TRACE_ANCHOR_STATUS.FAILED);
+    expect(result.errorMessage).toBe('trace_already_anchored_with_different_hash');
+  });
 });

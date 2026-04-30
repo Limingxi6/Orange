@@ -214,6 +214,45 @@ describe('TraceService anchor flow', () => {
     expect(result.anchorStatus).toBe(TRACE_ANCHOR_STATUS.SUCCESS);
   });
 
+  it('skips evm anchor retry when an existing trace code is already anchored', async () => {
+    const prisma = createBasePrismaForCreate();
+    const proofProvider = new HashProofProvider();
+    const anchorProvider: TraceAnchorProvider = {
+      providerKey: 'evm',
+      anchorProof: jest.fn().mockResolvedValue({
+        success: true,
+        txId: '0xabc123',
+        blockNumber: '128',
+        anchorStatus: TRACE_ANCHOR_STATUS.SUCCESS,
+        chainProvider: 'evm',
+        chainNetwork: 'sepolia',
+        anchoredAt: FIXED_NOW,
+      }),
+    };
+
+    const service = new TraceService(
+      prisma as never,
+      { suggestTraceAdvice: jest.fn().mockResolvedValue({ content: { title: '溯源说明建议', summary: '', actions: [] }, fromLlm: false }) } as never,
+      createConfigService({
+        'trace.anchorEnabled': true,
+        'trace.anchorProvider': 'evm',
+      }),
+      proofProvider,
+      anchorProvider,
+    );
+
+    await service.createOrUpdateForProduct(1, 'P1-B1001-KS8Q1A');
+    const result = await service.createOrUpdateForProduct(1, 'P1-B1001-KS8Q1A');
+
+    expect(anchorProvider.anchorProof).toHaveBeenCalledTimes(1);
+
+    const regenerateUpdateCall = prisma.traceRecord.update.mock.calls[1][0].data;
+    expect(regenerateUpdateCall.anchorStatus).toBe(TRACE_ANCHOR_STATUS.SUCCESS);
+    expect(regenerateUpdateCall.txId).toBe('0xabc123');
+    expect(regenerateUpdateCall.chainProvider).toBe('evm');
+    expect(result.anchorStatus).toBe(TRACE_ANCHOR_STATUS.SUCCESS);
+  });
+
   it('keeps main flow when anchor fails', async () => {
     const prisma = createBasePrismaForCreate();
     const proofProvider = new HashProofProvider();

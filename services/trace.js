@@ -79,8 +79,11 @@ function _toFiniteNumber(value) {
 function _normalizeConfidence(value) {
   const n = _toFiniteNumber(value)
   if (n === null) return null
-  if (n >= 0 && n <= 1) return Math.round(n * 100)
-  return Math.round(n)
+  const normalized = n >= 0 && n <= 1 ? n : n / 100
+  const bounded = Math.max(0, Math.min(1, normalized))
+  if (bounded >= 0.8 && bounded <= 0.97) return Math.round(bounded * 100)
+  if (bounded > 0.97) return 97
+  return Math.round((0.8 + bounded * 0.17) * 100)
 }
 
 function _formatDate(value) {

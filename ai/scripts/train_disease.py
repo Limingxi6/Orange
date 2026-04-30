@@ -22,7 +22,7 @@ def main() -> None:
     parser.add_argument("--image-root", default="", help="Optional image root for CSV relative paths")
     parser.add_argument("--labels", default="", help="Optional labels mapping file")
 
-    parser.add_argument("--out", default=str(PROJECT_ROOT / "models" / "disease_classifier.pt"))
+    parser.add_argument("--out", default=str(PROJECT_ROOT / "models" / "disease_classifier_leaves.pt"))
     parser.add_argument("--label-out", default=str(PROJECT_ROOT / "models" / "disease_label_mapping.json"))
 
     parser.add_argument("--backbone", default="mobilenet_v3_small")

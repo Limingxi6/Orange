@@ -1,0 +1,20 @@
+<view class="batch-card">
+  <view class="batch-header flex-between">
+    <text class="batch-name">{{name}}</text>
+    <view class="batch-status {{statusClass}}" wx:if="{{status}}">{{status}}</view>
+  </view>
+  <view class="batch-body">
+    <view class="batch-row" wx:if="{{variety}}">
+      <text class="batch-label">品种：</text>
+      <text class="batch-value">{{variety}}</text>
+    </view>
+    <view class="batch-row" wx:if="{{stage}}">
+      <text class="batch-label">生育阶段：</text>
+      <text class="batch-value">{{stage}}</text>
+    </view>
+    <view class="batch-row" wx:if="{{plantDate}}">
+      <text class="batch-label">种植日期：</text>
+      <text class="batch-value">{{plantDate}}</text>
+    </view>
+  </view>
+</view>

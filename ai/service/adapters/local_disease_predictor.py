@@ -124,7 +124,7 @@ class LocalDiseasePredictor:
         if env_model:
             return env_model
 
-        project_default = Path(__file__).resolve().parents[2] / "models" / "disease_classifier.pt"
+        project_default = Path(__file__).resolve().parents[2] / "models" / "disease_classifier_leaves.pt"
         if project_default.exists():
             return str(project_default)
 
@@ -135,7 +135,7 @@ class LocalDiseasePredictor:
             return None
         path = Path(value)
         if path.is_dir():
-            file_path = path / "disease_classifier.pt"
+            file_path = path / "disease_classifier_leaves.pt"
             if file_path.exists():
                 return str(file_path)
             return None

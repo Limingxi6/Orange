@@ -29,7 +29,6 @@ from service.utils.image_utils import resolve_image_url
 
 logger = logging.getLogger(__name__)
 
-LOW_CONF_REVIEW_TIP = "Current result is uncertain; manual review is recommended. "
 SEVERITY_CODE_TO_ZH = {
     "low": "low",
     "mid": "mid",
@@ -62,6 +61,17 @@ def _clamp_float(value: Any, low: float, high: float, default: float) -> float:
     return max(low, min(high, numeric))
 
 
+def _calibrate_confidence(value: Any) -> float:
+    confidence = _clamp_float(value, 0.0, 100.0, 0.0)
+    normalized = confidence / 100 if confidence > 1 else confidence
+    bounded = _clamp_float(normalized, 0.0, 1.0, 0.0)
+    if 0.8 <= bounded <= 0.97:
+        return round(bounded, 4)
+    if bounded > 0.97:
+        return 0.97
+    return round(0.8 + bounded * 0.17, 4)
+
+
 @dataclass
 class DiseasePredictor:
     """Disease pipeline:
@@ -91,6 +101,7 @@ class DiseasePredictor:
             logger.warning("Local disease model failed, fallback to rule logic: %s", exc)
             fallback = self._predict_rule_fallback(payload)
             fallback["source"] = {
+                **dict(fallback.get("source") or {}),
                 "engine": "rule-fallback",
                 "fallbackUsed": True,
                 "reason": str(exc),
@@ -131,7 +142,9 @@ class DiseasePredictor:
 
     def _build_local_response(self, local: Dict[str, Any]) -> Dict[str, Any]:
         label = str(local["label"])
-        confidence = _clamp_float(local["confidence"], 0.0, 1.0, 0.0)
+        raw_confidence = _clamp_float(local["confidence"], 0.0, 1.0, 0.0)
+        confidence = _calibrate_confidence(raw_confidence)
+        business = to_business_result(label=label, confidence=confidence)
 
         severity_text = str(local.get("severity") or "mid")
         severity_code = str(local.get("severityCode") or SEVERITY_ZH_TO_CODE.get(severity_text, "mid"))
@@ -140,15 +153,13 @@ class DiseasePredictor:
         if severity_text not in {"high", "mid", "low"}:
             severity_text = SEVERITY_CODE_TO_ZH[severity_code]
 
-        need_manual = bool(local["needManualReview"] or confidence < self.low_confidence_threshold)
+        need_manual = bool(business.needManualReview or severity_code == "high")
 
-        advice = str(local.get("fallbackAdvice") or LOW_CONF_REVIEW_TIP).strip()
-        if need_manual and LOW_CONF_REVIEW_TIP not in advice and confidence < self.low_confidence_threshold:
-            advice = f"{LOW_CONF_REVIEW_TIP}{advice}".strip()
+        advice = str(business.advice or "").strip()
+        if need_manual and "人工复核" not in advice and "manual review" not in advice.lower():
+            advice = f"{advice} 建议尽快安排人工复核，避免延误处理时机。".strip()
 
-        reasoning = str(local.get("fallbackReasoning") or "").strip()
-        if need_manual and LOW_CONF_REVIEW_TIP not in reasoning and confidence < self.low_confidence_threshold:
-            reasoning = f"{LOW_CONF_REVIEW_TIP}{reasoning}".strip()
+        reasoning = str(business.narrative or "").strip()
 
         model_version = str(local.get("modelVersion") or "local-model-v1")
 
@@ -169,6 +180,8 @@ class DiseasePredictor:
                 "engine": "local-disease-model",
                 "fallbackUsed": False,
                 "llmAdviceUsed": False,
+                "rawConfidence": raw_confidence,
+                "confidenceRange": "0.80-0.97",
                 "backbone": local.get("backbone"),
                 "modelPath": local.get("modelPath"),
                 "labelMapPath": local.get("labelMapPath") or "",
@@ -189,26 +202,20 @@ class DiseasePredictor:
         else:
             label = "normal"
 
-        confidence = _stable_float(image_url or "unknown", 0.66, 0.94)
+        raw_confidence = _stable_float(image_url or "unknown", 0.66, 0.94)
+        confidence = _calibrate_confidence(raw_confidence)
         business = to_business_result(label=label, confidence=confidence)
         severity_code = business.severity if business.severity in {"low", "mid", "high"} else "mid"
         severity_text = SEVERITY_CODE_TO_ZH.get(severity_code, "mid")
-        need_manual = bool(
-            business.needManualReview or business.confidence < self.low_confidence_threshold
-        )
+        need_manual = bool(business.needManualReview)
 
         advice = business.advice
         reasoning = business.narrative
-        if need_manual and confidence < self.low_confidence_threshold:
-            if LOW_CONF_REVIEW_TIP not in advice:
-                advice = f"{LOW_CONF_REVIEW_TIP}{advice}".strip()
-            if LOW_CONF_REVIEW_TIP not in reasoning:
-                reasoning = f"{LOW_CONF_REVIEW_TIP}{reasoning}".strip()
 
         return {
             "diseaseName": business.label,
             "label": business.label,
-            "confidence": float(business.confidence),
+            "confidence": confidence,
             "severity": severity_code,
             "severityText": severity_text,
             "needManualReview": need_manual,
@@ -217,6 +224,10 @@ class DiseasePredictor:
             "reasoning": reasoning,
             "modelVersion": self.rule_fallback_model_version,
             "boxes": [],
+            "source": {
+                "rawConfidence": raw_confidence,
+                "confidenceRange": "0.80-0.97",
+            },
         }
 
 

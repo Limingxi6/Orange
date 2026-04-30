@@ -15,7 +15,7 @@ from disease.evaluate import evaluate_disease_model
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Evaluate disease classifier checkpoint")
-    parser.add_argument("--model", default=str(PROJECT_ROOT / "models" / "disease_classifier.pt"))
+    parser.add_argument("--model", default=str(PROJECT_ROOT / "models" / "disease_classifier_leaves.pt"))
     parser.add_argument("--source", default=str(PROJECT_ROOT / "data" / "disease_labels.sample.csv"))
     parser.add_argument("--source-type", default="csv", choices=["csv", "dir", "directory"])
     parser.add_argument("--image-root", default="")

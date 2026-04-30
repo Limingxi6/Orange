@@ -1,0 +1,161 @@
+﻿<view class="page">
+  <view class="section-card">
+    <view class="card-title">
+      <van-icon name="photograph" color="#FF8C00" size="36rpx" custom-class="title-icon" />
+      <text>果实照片</text>
+    </view>
+    <view class="upload-area">
+      <van-uploader
+        file-list="{{fileList}}"
+        max-count="1"
+        preview-size="500rpx"
+        accept="image"
+        bind:after-read="onAfterRead"
+        bind:delete="onDeleteImage"
+        upload-icon="photograph"
+        upload-text="拍摄单果照片（可选）"
+        image-fit="aspectFill"
+      />
+    </view>
+    <van-notice-bar
+      left-icon="info-o"
+      text="支持图片+结构化参数，或仅结构化参数进行规则估算。"
+      color="#999"
+      background="#FAFAFA"
+      custom-class="tip-bar"
+    />
+  </view>
+
+  <view class="section-card">
+    <view class="card-title">
+      <van-icon name="edit" color="#FF8C00" size="36rpx" custom-class="title-icon" />
+      <text>补充信息</text>
+    </view>
+    <van-cell-group inset border="{{false}}">
+      <van-cell title="销售渠道" value="{{channel}}" is-link bindtap="onShowChannelPicker" />
+      <van-cell title="包装方式" value="{{packaging}}" is-link bindtap="onShowPackagePicker" />
+      <van-cell title="销售地区" value="{{region}}" is-link bindtap="onShowRegionPicker" />
+      <van-cell title="缺陷等级" value="{{defectLevelText}}" is-link bindtap="onShowDefectPicker" />
+      <van-field
+        label="果径（毫米）"
+        type="digit"
+        placeholder="例如 75"
+        value="{{diameter}}"
+        bind:input="onDiameterInput"
+      />
+      <van-field
+        label="糖度（白利糖度）"
+        type="digit"
+        placeholder="例如 12.5"
+        value="{{brix}}"
+        bind:input="onBrixInput"
+      />
+      <van-field
+        label="重量（克）"
+        type="digit"
+        placeholder="例如 180"
+        value="{{weight}}"
+        bind:input="onWeightInput"
+      />
+    </van-cell-group>
+  </view>
+
+  <van-button
+    type="warning"
+    block
+    round
+    color="#FF8C00"
+    size="large"
+    loading="{{grading}}"
+    loading-text="AI 分级中..."
+    bind:click="onStartGrade"
+    custom-class="grade-btn"
+  >
+    <van-icon name="gem-o" custom-class="btn-icon" />开始分级与估价
+  </van-button>
+
+  <view class="result-section" wx:if="{{gradeFailed}}">
+    <van-divider content-position="center" custom-style="margin:32rpx 0 28rpx;color:#999;">分级结果</van-divider>
+    <view class="section-card fail-card">
+      <van-empty image="error" description="分级失败，请检查网络后重试">
+        <van-button round type="warning" size="small" color="#FF8C00" bind:click="onStartGrade" custom-class="retry-btn">重新分级</van-button>
+      </van-empty>
+    </view>
+  </view>
+
+  <view class="result-section" wx:if="{{showResult}}">
+    <van-divider content-position="center" custom-style="margin:32rpx 0 28rpx;color:#999;">分级结果</van-divider>
+
+    <view class="section-card score-card">
+      <view class="grade-row">
+        <view class="grade-badge">{{result.grade}}</view>
+        <van-tag type="warning" plain round size="medium" wx:if="{{result.variety}}">{{result.variety}}</van-tag>
+      </view>
+
+      <view class="score-list">
+        <view class="score-item" wx:for="{{scores}}" wx:key="label">
+          <text class="score-label">{{item.label}}</text>
+          <view class="score-bar-wrap">
+            <view class="score-bar {{item.color}}" style="width: {{item.value}}%"></view>
+          </view>
+          <text class="score-value">{{item.value}}{{item.suffix ? item.suffix : '分'}}</text>
+        </view>
+      </view>
+
+      <view class="baseline-info" wx:if="{{result.source}}">
+        <text class="baseline-text">感知来源: {{result.source.engine}} / 决策来源: {{result.source.decision}}</text>
+      </view>
+      <view class="baseline-info" wx:if="{{result.modelVersion}}">
+        <text class="baseline-text">模型版本: {{result.modelVersion}}</text>
+      </view>
+      <view class="baseline-info" wx:if="{{result.requestId}}">
+        <text class="baseline-text">请求编号: {{result.requestId}}</text>
+      </view>
+    </view>
+
+    <price-panel
+      variety="{{result.variety}}"
+      grade="{{result.grade}}"
+      min-price="{{result.retailMinPrice}}"
+      max-price="{{result.retailMaxPrice}}"
+      wholesale-min="{{result.wholesaleMinPrice}}"
+      wholesale-max="{{result.wholesaleMaxPrice}}"
+      reason="{{result.reason}}"
+      risk-warning="{{result.riskWarning}}"
+      factors="{{result.factors}}"
+    />
+
+    <view class="section-card ai-recommend-card" wx:if="{{result.recommendation}}">
+      <view class="card-title">
+        <van-icon name="bulb-o" color="#FF8C00" size="32rpx" custom-class="title-icon" />
+        <text>{{result.recommendation.title ? result.recommendation.title : '智能建议'}}</text>
+      </view>
+      <text class="ai-summary">{{result.recommendation.summary ? result.recommendation.summary : result.explanation}}</text>
+      <view class="ai-action" wx:for="{{result.recommendation.actions}}" wx:key="index">
+        {{index + 1}}. {{item}}
+      </view>
+      <text class="ai-risk" wx:if="{{result.recommendation.riskNote}}">{{result.recommendation.riskNote}}</text>
+    </view>
+
+    <view class="baseline-info" wx:if="{{baseline}}">
+      <van-icon name="chart-trending-o" size="28rpx" color="#999" custom-class="baseline-icon" />
+      <text class="baseline-text">当前市场基准价: {{baseline.basePrice}} {{baseline.unit}}（{{baseline.updateTime}} 更新）</text>
+    </view>
+  </view>
+
+  <van-popup show="{{showChannelPicker}}" position="bottom" round bind:close="onCloseChannelPicker">
+    <van-picker columns="{{channelColumns}}" show-toolbar title="选择销售渠道" bind:confirm="onConfirmChannel" bind:cancel="onCloseChannelPicker" />
+  </van-popup>
+
+  <van-popup show="{{showPackagePicker}}" position="bottom" round bind:close="onClosePackagePicker">
+    <van-picker columns="{{packageColumns}}" show-toolbar title="选择包装方式" bind:confirm="onConfirmPackage" bind:cancel="onClosePackagePicker" />
+  </van-popup>
+
+  <van-popup show="{{showRegionPicker}}" position="bottom" round bind:close="onCloseRegionPicker">
+    <van-picker columns="{{regionColumns}}" show-toolbar title="选择销售地区" bind:confirm="onConfirmRegion" bind:cancel="onCloseRegionPicker" />
+  </van-popup>
+
+  <van-popup show="{{showDefectPicker}}" position="bottom" round bind:close="onCloseDefectPicker">
+    <van-picker columns="{{defectColumns}}" show-toolbar title="选择缺陷等级" bind:confirm="onConfirmDefect" bind:cancel="onCloseDefectPicker" />
+  </van-popup>
+</view>

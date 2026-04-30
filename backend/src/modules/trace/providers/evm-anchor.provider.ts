@@ -91,6 +91,9 @@ export class EvmAnchorProvider implements TraceAnchorProvider {
       return this.buildFailedResult('tx_reverted');
     } catch (error) {
       const reason = this.toSafeErrorMessage(error);
+      if (this.isAlreadyAnchoredRevert(reason)) {
+        return this.resolveAlreadyAnchoredResult(input, reason);
+      }
       this.logger.warn(
         `EVM anchor failed traceCode=${input.traceCode}, proofHash=${this.maskHash(input.proofHash)}, anchorStatus=${TRACE_ANCHOR_STATUS.FAILED}, reason=${reason}`,
       );
@@ -224,6 +227,81 @@ export class EvmAnchorProvider implements TraceAnchorProvider {
       chainNetwork: this.chainNetwork,
       errorMessage,
     };
+  }
+
+  private async resolveAlreadyAnchoredResult(
+    input: TraceAnchorInput,
+    originalReason: string,
+  ): Promise<TraceAnchorResult> {
+    try {
+      const anchor = await this.contract?.getAnchor(input.traceCode);
+      const anchoredProofHash = this.pickAnchorValue(anchor, 'proofHash', 1);
+      const anchoredAt = this.parseAnchorTimestamp(
+        this.pickAnchorValue(anchor, 'anchoredAt', 2),
+      );
+
+      if (anchoredProofHash !== input.proofHash) {
+        const reason = 'trace_already_anchored_with_different_hash';
+        this.logger.warn(
+          `EVM anchor failed traceCode=${input.traceCode}, proofHash=${this.maskHash(input.proofHash)}, anchorStatus=${TRACE_ANCHOR_STATUS.FAILED}, reason=${reason}`,
+        );
+        return this.buildFailedResult(reason);
+      }
+
+      this.logger.log(
+        `EVM anchor idempotent success traceCode=${input.traceCode}, proofHash=${this.maskHash(input.proofHash)}, anchorStatus=${TRACE_ANCHOR_STATUS.SUCCESS}, chainNetwork=${this.chainNetwork}`,
+      );
+
+      return {
+        success: true,
+        anchorStatus: TRACE_ANCHOR_STATUS.SUCCESS,
+        chainProvider: this.providerKey,
+        chainNetwork: this.chainNetwork,
+        anchoredAt,
+      };
+    } catch (error) {
+      const reason = this.toSafeErrorMessage(error || originalReason);
+      this.logger.warn(
+        `EVM anchor failed traceCode=${input.traceCode}, proofHash=${this.maskHash(input.proofHash)}, anchorStatus=${TRACE_ANCHOR_STATUS.FAILED}, reason=${reason}`,
+      );
+      return this.buildFailedResult(reason);
+    }
+  }
+
+  private isAlreadyAnchoredRevert(reason: string): boolean {
+    return reason.toLowerCase().includes('trace already anchored');
+  }
+
+  private pickAnchorValue(anchor: unknown, key: string, index: number): unknown {
+    if (Array.isArray(anchor)) {
+      return anchor[index];
+    }
+    if (anchor && typeof anchor === 'object') {
+      const record = anchor as Record<string, unknown>;
+      return record[key] ?? record[index];
+    }
+    return undefined;
+  }
+
+  private parseAnchorTimestamp(value: unknown): Date | undefined {
+    if (typeof value === 'bigint') {
+      const timestamp = Number(value);
+      return Number.isSafeInteger(timestamp) && timestamp > 0
+        ? new Date(timestamp * 1000)
+        : undefined;
+    }
+    if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+      return new Date(value * 1000);
+    }
+    if (typeof value === 'string' && value.trim()) {
+      const timestamp = Number(value);
+      if (Number.isFinite(timestamp) && timestamp > 0) {
+        return new Date(timestamp * 1000);
+      }
+      const parsed = new Date(value);
+      return Number.isNaN(parsed.getTime()) ? undefined : parsed;
+    }
+    return undefined;
   }
 
   private toSafeErrorMessage(error: unknown): string {

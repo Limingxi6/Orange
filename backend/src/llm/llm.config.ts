@@ -31,7 +31,7 @@ function toFloat(value: string | number | undefined, fallback: number): number {
 export function resolveLlmConfig(configService: ConfigService): LlmRuntimeConfig {
   const envApiKey = firstNonEmptyEnv(['OPENAI_API_KEY', 'DEEPSEEK_API_KEY', 'LLM_API_KEY']);
   const envBaseUrl = firstNonEmptyEnv(['OPENAI_BASE_URL', 'DEEPSEEK_BASE_URL', 'LLM_BASE_URL']);
-  const envModel = firstNonEmptyEnv(['OPENAI_MODEL', 'DEEPSEEK_MODEL', 'LLM_MODEL']);
+  const envModel = firstNonEmptyEnv(['LLM_MODEL']);
   const envTimeoutMs = firstNonEmptyEnv([
     'OPENAI_TIMEOUT_MS',
     'DEEPSEEK_TIMEOUT_MS',
@@ -45,7 +45,7 @@ export function resolveLlmConfig(configService: ConfigService): LlmRuntimeConfig
 
   const apiKey = envApiKey || configService.get<string>('llm.apiKey', '');
   const baseUrl = envBaseUrl || configService.get<string>('llm.baseUrl', '');
-  const model = envModel || configService.get<string>('llm.model', 'gpt-4o-mini');
+  const model = envModel || configService.get<string>('llm.model', 'deepseek-chat');
   const chatPath = configService.get<string>('llm.chatPath', '/v1/chat/completions');
 
   const enabledFlag = configService.get<boolean>('llm.enabled', false);
@@ -57,9 +57,9 @@ export function resolveLlmConfig(configService: ConfigService): LlmRuntimeConfig
     baseUrl,
     model,
     chatPath,
-    timeoutMs: toInt(envTimeoutMs ?? configService.get<number>('llm.timeoutMs'), DEFAULT_TIMEOUT_MS),
+    timeoutMs: toInt(envTimeoutMs || configService.get<number>('llm.timeoutMs'), DEFAULT_TIMEOUT_MS),
     maxRetries: toInt(
-      envMaxRetries ?? configService.get<number>('llm.maxRetries'),
+      envMaxRetries || configService.get<number>('llm.maxRetries'),
       DEFAULT_MAX_RETRIES,
     ),
     defaultTemperature: toFloat(

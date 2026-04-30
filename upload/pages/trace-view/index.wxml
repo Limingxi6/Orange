@@ -1,0 +1,207 @@
+﻿<view class="page">
+  <view class="state-loading" wx:if="{{loading}}">
+    <van-loading size="48rpx" vertical>加载溯源信息中...</van-loading>
+  </view>
+
+  <van-empty wx:elif="{{noTraceCode}}" description="缺少溯源码，无法查看溯源信息" />
+
+  <van-empty wx:elif="{{invalidTraceCode}}" image="error" description="溯源码无效，请重新扫码" />
+
+  <van-empty wx:elif="{{traceNotFound}}" image="search" description="未查询到该溯源码对应的溯源信息" />
+
+  <view class="state-error" wx:elif="{{loadFailed}}">
+    <van-empty image="error" description="溯源信息加载失败">
+      <van-button round type="warning" size="small" color="#FF8C00" bindtap="onRetry" custom-class="retry-btn">重新加载</van-button>
+    </van-empty>
+  </view>
+
+  <van-empty wx:elif="{{!hasTraceData}}" image="search" description="未找到该溯源码的可展示信息" />
+
+  <block wx:else>
+    <view class="trace-head">
+      <text class="trace-title">扫码溯源详情</text>
+      <text class="trace-code">溯源码：{{traceCode || '--'}}</text>
+      <text class="trace-desc">以下信息按买家关注重点展示，哈希验真为主结果，链锚定用于增强证明。</text>
+    </view>
+
+    <view class="card result-card">
+      <view class="card-title">结果概览</view>
+      <view class="result-main">
+        <text class="result-batch">{{batchInfo.name || '--'}}</text>
+        <text class="result-meta">溯源码：{{traceCode || '--'}}</text>
+      </view>
+      <view class="info-list">
+        <view class="info-row">
+          <text class="label">品种</text>
+          <text class="value">{{batchInfo.variety || '--'}}</text>
+        </view>
+        <view class="info-row">
+          <text class="label">产地</text>
+          <text class="value">{{originPlotText}}</text>
+        </view>
+        <view class="info-row">
+          <text class="label">当前状态</text>
+          <text class="value">{{stageStatusText}}</text>
+        </view>
+        <view class="info-row">
+          <text class="label">存证校验状态</text>
+          <text class="value">{{verifyResultText}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="card ai-summary-card" wx:if="{{buyerSummary}}">
+      <view class="card-title">智能建议</view>
+      <text class="ai-summary-text">{{buyerSummary.summary}}</text>
+      <view class="ai-summary-action" wx:for="{{buyerSummary.actions}}" wx:key="index">
+        {{index + 1}}. {{item}}
+      </view>
+      <text class="ai-summary-risk" wx:if="{{buyerSummary.riskNote}}">{{buyerSummary.riskNote}}</text>
+    </view>
+
+    <view class="card">
+      <view class="card-title">2. 产品基础信息</view>
+      <view class="info-list">
+        <view class="info-row">
+          <text class="label">品种</text>
+          <text class="value">{{batchInfo.variety || '--'}}</text>
+        </view>
+        <view class="info-row">
+          <text class="label">产地/地块</text>
+          <text class="value">{{originPlotText}}</text>
+        </view>
+        <view class="info-row">
+          <text class="label">种植时间</text>
+          <text class="value">{{batchInfo.plantDate || '--'}}</text>
+        </view>
+        <view class="info-row">
+          <text class="label">当前阶段</text>
+          <text class="value">{{batchInfo.stage || '--'}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="card">
+      <view class="card-title">3. 关键生产记录</view>
+      <van-empty wx:if="{{timeline.length === 0}}" description="暂无关键生产记录" />
+      <block wx:else>
+        <view class="summary-box" wx:if="{{processHighlights.length > 0}}">
+          <text class="summary-title">关键记录摘要</text>
+          <view class="summary-line" wx:for="{{processHighlights}}" wx:key="index">{{item}}</view>
+        </view>
+
+        <view class="timeline-list">
+          <view class="timeline-item" wx:for="{{keyTimeline}}" wx:key="index">
+            <view class="timeline-dot"></view>
+            <view class="timeline-body">
+              <view class="timeline-head">
+                <text class="timeline-type">{{item.type || '生产记录'}}</text>
+                <text class="timeline-time">{{item.time || '--'}}</text>
+              </view>
+              <text class="timeline-content">{{item.content || '--'}}</text>
+            </view>
+          </view>
+        </view>
+      </block>
+    </view>
+
+    <view class="card">
+      <view class="card-title">4. 检测与异常记录</view>
+      <van-empty wx:if="{{!latestDisease}}" image="search" description="暂无病害或质检异常记录" />
+      <block wx:else>
+        <view class="disease-main">
+          <text class="disease-name">最近记录：{{latestDisease.label || '--'}}</text>
+          <text class="disease-date">记录时间：{{latestDiseaseDateText}}</text>
+        </view>
+        <view class="info-list">
+          <view class="info-row">
+            <text class="label">置信度</text>
+            <text class="value">{{latestDiseaseConfidenceText}}</text>
+          </view>
+          <view class="info-row">
+            <text class="label">严重度</text>
+            <text class="value">{{latestDiseaseSeverityText}}</text>
+          </view>
+          <view class="info-row">
+            <text class="label">处理状态</text>
+            <text class="value">{{latestDiseaseStatusText}}</text>
+          </view>
+          <view class="info-row">
+            <text class="label">复核状态</text>
+            <text class="value">{{latestDiseaseReviewText}}</text>
+          </view>
+        </view>
+      </block>
+    </view>
+
+    <view class="card trust-card">
+      <view class="card-title">5. 可信校验信息</view>
+
+      <view class="verify-banner {{overallChainStatus}}">
+        <van-icon
+          name="{{overallChainStatus === 'verified' ? 'passed' : overallChainStatus === 'failed' ? 'close' : 'clock-o'}}"
+          size="36rpx"
+          color="{{overallChainStatus === 'verified' ? '#4CAF50' : overallChainStatus === 'failed' ? '#F44336' : '#FF9800'}}"
+        />
+        <view class="verify-copy">
+          <text class="verify-title">{{mainVerifyTitle}}</text>
+          <text class="verify-desc">{{mainVerifyDesc}}</text>
+        </view>
+      </view>
+
+      <view class="info-list">
+        <view class="info-row">
+          <text class="label">verified</text>
+          <text class="value">{{verified === true ? 'true' : verified === false ? 'false' : 'null'}}</text>
+        </view>
+        <view class="info-row">
+          <text class="label">message</text>
+          <text class="value">{{verifyMessage || '--'}}</text>
+        </view>
+        <view class="info-row">
+          <text class="label">proofType</text>
+          <text class="value">{{proofType || '--'}}</text>
+        </view>
+        <view class="info-row">
+          <text class="label">anchorStatus</text>
+          <text class="value">{{anchorStatus || '--'}}</text>
+        </view>
+        <view class="info-row" wx:if="{{proofHash}}">
+          <text class="label">proofHash</text>
+          <view class="copy-wrap" bindtap="onCopyProofHash" data-hash="{{proofHash}}">
+            <text class="value mono">{{proofHashShort}}</text>
+            <text class="copy-btn">复制</text>
+          </view>
+        </view>
+        <view class="info-row">
+          <text class="label">txId</text>
+          <view class="copy-wrap" wx:if="{{proofTxId}}" bindtap="onCopyTxId" data-txid="{{proofTxId}}">
+            <text class="value mono">{{proofTxIdShort}}</text>
+            <text class="copy-btn">复制</text>
+          </view>
+          <text class="value" wx:else>--</text>
+        </view>
+        <view class="info-row">
+          <text class="label">chainNetwork</text>
+          <text class="value">{{chainNetwork || '--'}}</text>
+        </view>
+        <view class="info-row">
+          <text class="label">anchoredAt</text>
+          <text class="value">{{anchoredAt || '--'}}</text>
+        </view>
+      </view>
+
+      <van-button
+        plain
+        round
+        type="warning"
+        color="#FF8C00"
+        size="small"
+        loading="{{verifying}}"
+        loading-text="验真中..."
+        bindtap="onVerifyChain"
+        custom-class="verify-btn"
+      >重新验真</van-button>
+    </view>
+  </block>
+</view>

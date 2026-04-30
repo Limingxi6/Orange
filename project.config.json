@@ -54,6 +54,18 @@
         "type": "folder"
       },
       {
+        "value": "upload",
+        "type": "folder"
+      },
+      {
+        "value": "tools",
+        "type": "folder"
+      },
+      {
+        "value": ".codex_tmp",
+        "type": "folder"
+      },
+      {
         "value": "node_modules",
         "type": "folder"
       },

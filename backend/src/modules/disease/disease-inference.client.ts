@@ -15,12 +15,16 @@ export type DiseaseInferenceResult = {
   advice?: string;
   reasoning?: string;
   severityText?: string;
+  rawConfidence?: number;
 };
 
 type InferenceApiResponse =
   | DiseaseInferenceResult
   | {
       data?: Partial<DiseaseInferenceResult>;
+      source?: {
+        rawConfidence?: unknown;
+      };
       diseaseName?: string;
       confidence?: number;
       severity?: Severity;
@@ -31,6 +35,7 @@ type InferenceApiResponse =
       advice?: string;
       reasoning?: string;
       severityText?: string;
+      rawConfidence?: number;
     };
 
 @Injectable()
@@ -115,6 +120,14 @@ export class DiseaseInferenceClient {
     const advice = source.advice;
     const reasoning = source.reasoning;
     const severityText = source.severityText;
+    const rawConfidence =
+      typeof source.rawConfidence === 'number'
+        ? source.rawConfidence
+        : 'source' in payload &&
+            payload.source &&
+            typeof payload.source.rawConfidence === 'number'
+          ? payload.source.rawConfidence
+          : undefined;
 
     if (
       typeof diseaseName !== 'string' ||
@@ -138,6 +151,7 @@ export class DiseaseInferenceClient {
       advice: typeof advice === 'string' ? advice : undefined,
       reasoning: typeof reasoning === 'string' ? reasoning : undefined,
       severityText: typeof severityText === 'string' ? severityText : undefined,
+      rawConfidence,
     };
   }
 
@@ -154,6 +168,7 @@ export class DiseaseInferenceClient {
       modelVersion: 'rule-local-v1',
       boxes: [],
       needManualReview: local.severity === 'high',
+      rawConfidence: local.confidence,
     };
   }
 }

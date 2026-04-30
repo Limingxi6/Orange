@@ -1,0 +1,23 @@
+﻿{
+  "batch": {
+    "batch_id": 1001,
+    "stage": "果实膨大期",
+    "orchard_name": "A区3号地"
+  },
+  "weather": {
+    "temp": 32,
+    "humidity": 86,
+    "forecast": [
+      {"condition": "小雨"},
+      {"condition": "中雨"},
+      {"condition": "阴"}
+    ]
+  },
+  "disease": {
+    "recent_disease_count": 3,
+    "recent_high_disease_count": 1
+  },
+  "farming": {
+    "days_without_irrigation": 6
+  }
+}

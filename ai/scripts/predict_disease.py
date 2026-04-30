@@ -86,7 +86,7 @@ def _resolve_prompt_dir(value: str) -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Predict citrus disease and map to business fields")
-    parser.add_argument("--model", default=str(PROJECT_ROOT / "models" / "disease_classifier.pt"))
+    parser.add_argument("--model", default=str(PROJECT_ROOT / "models" / "disease_classifier_leaves.pt"))
     parser.add_argument("--image", default="")
     parser.add_argument("--input", default="", help="JSON file path or JSON string")
 

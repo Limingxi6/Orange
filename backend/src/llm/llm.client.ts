@@ -2,7 +2,7 @@
 import { ConfigService } from '@nestjs/config';
 import { resolveLlmConfig } from './llm.config';
 import { LlmChatOptions, LlmChatResponse, LlmMessage } from './llm.types';
-import { logLlmWarn, maskApiKey, redactText } from './llm.utils';
+import { logLlmWarn, redactText } from './llm.utils';
 
 type ChatCompletionResponse = {
   choices?: Array<{
@@ -69,10 +69,12 @@ export class LlmClient {
         if (!response.ok) {
           const errBody = await response.text().catch(() => '');
           const retryable = response.status >= 500 || response.status === 429;
+          const errorCode = this.toHttpErrorCode(response.status);
           logLlmWarn(this.logger, 'LLM HTTP error', {
             status: response.status,
             attempt,
             retryable,
+            errorCode,
             body: redactText(errBody, 120),
             endpoint,
             model: cfg.model,
@@ -83,7 +85,7 @@ export class LlmClient {
             continue;
           }
 
-          return { ok: false, text: '', error: `HTTP_${response.status}`, model: cfg.model };
+          return { ok: false, text: '', error: errorCode, model: cfg.model };
         }
 
         const data = (await response.json()) as ChatCompletionResponse;
@@ -95,14 +97,15 @@ export class LlmClient {
         return { ok: true, text, raw: data, model: cfg.model };
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        const retryable = attempt <= cfg.maxRetries;
+        const errorCode = this.isAbortError(error) ? 'REQUEST_TIMEOUT' : 'REQUEST_EXCEPTION';
+        const retryable = this.isRetryableException(error) && attempt <= cfg.maxRetries;
         logLlmWarn(this.logger, 'LLM request exception', {
           attempt,
           retryable,
+          errorCode,
           message: redactText(message, 160),
           endpoint,
           model: cfg.model,
-          apiKey: maskApiKey(cfg.apiKey),
         });
 
         if (retryable) {
@@ -110,7 +113,7 @@ export class LlmClient {
           continue;
         }
 
-        return { ok: false, text: '', error: 'REQUEST_EXCEPTION', model: cfg.model };
+        return { ok: false, text: '', error: errorCode, model: cfg.model };
       } finally {
         clearTimeout(timer);
       }
@@ -132,6 +135,43 @@ export class LlmClient {
 
   private async delay(ms: number): Promise<void> {
     await new Promise<void>((resolve) => setTimeout(resolve, ms));
+  }
+
+  private isAbortError(error: unknown): boolean {
+    if (!(error instanceof Error)) {
+      return false;
+    }
+    return error.name === 'AbortError' || error.message.toLowerCase().includes('aborted');
+  }
+
+  private isRetryableException(error: unknown): boolean {
+    if (this.isAbortError(error)) {
+      return true;
+    }
+    if (!(error instanceof Error)) {
+      return false;
+    }
+    const message = error.message.toLowerCase();
+    return (
+      message.includes('timeout') ||
+      message.includes('econnreset') ||
+      message.includes('etimedout') ||
+      message.includes('enotfound') ||
+      message.includes('fetch failed')
+    );
+  }
+
+  private toHttpErrorCode(status: number): string {
+    if (status === 504) {
+      return 'UPSTREAM_TIMEOUT';
+    }
+    if (status === 502 || status === 503) {
+      return 'UPSTREAM_UNAVAILABLE';
+    }
+    if (status === 429) {
+      return 'RATE_LIMITED';
+    }
+    return `HTTP_${status}`;
   }
 
   private buildEndpoint(baseUrl: string, chatPath: string): string {

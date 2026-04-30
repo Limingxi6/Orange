@@ -119,6 +119,31 @@ function normalizeGradeResult(data) {
   }
 }
 
+function normalizeBaseline(data, gradeCode) {
+  if (!data || typeof data !== 'object') return null
+
+  const toNum = (v) => {
+    const n = Number(v)
+    return Number.isFinite(n) ? n : undefined
+  }
+
+  const baselineMap = data.baselineMap && typeof data.baselineMap === 'object' ? data.baselineMap : {}
+  const resolvedGradeCode = String(gradeCode || data.gradeCode || '').toUpperCase()
+  const mappedPrice = resolvedGradeCode ? toNum(baselineMap[resolvedGradeCode]) : undefined
+  const fallbackMapPrice = Object.keys(baselineMap)
+    .map(key => toNum(baselineMap[key]))
+    .find(value => value !== undefined)
+  const basePrice = toNum(data.basePrice) ?? mappedPrice ?? fallbackMapPrice
+
+  return {
+    ...data,
+    gradeCode: resolvedGradeCode || data.gradeCode || '',
+    basePrice: basePrice ?? 0,
+    unit: data.unit || '元/斤',
+    updateTime: data.updateTime || ''
+  }
+}
+
 const SOURCE_ENGINE_LABELS = {
   'python-ai': 'AI',
   'local-rule': '本地规则',
@@ -247,7 +272,8 @@ const priceService = {
         url: '/ai/fruit/grade',
         filePath,
         name: 'file',
-        formData
+        formData,
+        timeout: 70000
       }).then(normalizeGradeResult).then(localizeResultView)
     }
 
@@ -278,10 +304,11 @@ const priceService = {
    * 获取价格基准线
    * GET /api/price/baseline
    */
-  getBaseline(variety, region) {
+  getBaseline(variety, region, gradeCode) {
     return tryReal(
-      () => request({ url: '/api/price/baseline', method: 'GET', data: { variety, region } }),
-      () => mockResolve({ basePrice: 6.0, unit: '元/斤', updateTime: '2026-03-15' })
+      () => request({ url: '/api/price/baseline', method: 'GET', data: { variety, region } })
+        .then(data => normalizeBaseline(data, gradeCode)),
+      () => mockResolve(normalizeBaseline({ basePrice: 6.0, unit: '元/斤', updateTime: '2026-03-15' }, gradeCode))
     )
   },
 

@@ -167,7 +167,8 @@ const uploadFile = (options) => {
     filePath,
     name = 'file',
     formData = {},
-    showError
+    showError,
+    timeout
   } = options
 
   const urlPath = _normalizeUrlPath(url)
@@ -188,7 +189,10 @@ const uploadFile = (options) => {
       filePath,
       name,
       formData: cleanedFormData,
-      timeout: config.TIMEOUT,
+      timeout:
+        typeof timeout === 'number' && Number.isFinite(timeout) && timeout > 0
+          ? Math.floor(timeout)
+          : config.TIMEOUT,
       header: { 'Authorization': auth },
       success(res) {
         _log('UPLOAD-RES', res.statusCode + ' ' + urlPath)

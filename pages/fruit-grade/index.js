@@ -259,7 +259,7 @@ Page({
         showResult: true
       })
 
-      this._fetchBaseline(localizedResult.variety)
+      this._fetchBaseline(localizedResult.variety, localizedResult.gradeCode)
     } catch (err) {
       this.setData({ gradeFailed: true })
       if (!err._toasted) {
@@ -270,9 +270,9 @@ Page({
     }
   },
 
-  async _fetchBaseline(variety) {
+  async _fetchBaseline(variety, gradeCode) {
     try {
-      const baseline = await priceService.getBaseline(variety, this.data.region)
+      const baseline = await priceService.getBaseline(variety, this.data.region, gradeCode)
       if (baseline) this.setData({ baseline })
     } catch (e) {
       console.warn('基准价查询失败（不影响分级结果）', e)

@@ -1,0 +1,92 @@
+<view class="page">
+  <!-- 加载中 -->
+  <view class="state-loading" wx:if="{{loadingInit}}">
+    <van-loading size="48rpx" vertical>加载中...</van-loading>
+  </view>
+
+  <!-- 加载失败 -->
+  <view class="state-error" wx:elif="{{loadInitFailed}}">
+    <van-empty description="加载失败，请检查网络">
+      <van-button round type="warning" size="small" color="#FF8C00" bindclick="onRetryLoad" custom-class="retry-btn">重新加载</van-button>
+    </van-empty>
+  </view>
+
+  <!-- 表单 -->
+  <view class="form-card" wx:else>
+    <!-- 关联批次（选择器） -->
+    <view class="field-group">
+      <view class="field-label">关联批次</view>
+      <picker mode="selector" range="{{batches}}" range-key="name" value="{{batchIndex}}" bindchange="onBatchChange">
+        <view class="field-wrap picker-field">
+          <text class="{{ batchIndex >= 0 ? 'picker-value' : 'picker-placeholder' }}">{{ batchIndex >= 0 ? batches[batchIndex].name : '请选择关联批次' }}</text>
+          <van-icon name="arrow" color="#999" size="16px" />
+        </view>
+      </picker>
+    </view>
+
+    <!-- 日志类型（选择器） -->
+    <view class="field-group">
+      <view class="field-label">日志类型</view>
+      <picker mode="selector" range="{{logTypes}}" range-key="label" value="{{typeIndex}}" bindchange="onTypeChange">
+        <view class="field-wrap picker-field">
+          <view class="picker-text">
+            <van-icon wx:if="{{typeIndex >= 0}}" name="{{logTypes[typeIndex].icon}}" size="28rpx" custom-class="picker-icon" />
+            <text class="{{ typeIndex >= 0 ? 'picker-value' : 'picker-placeholder' }}">{{ typeIndex >= 0 ? logTypes[typeIndex].label : '请选择日志类型' }}</text>
+          </view>
+          <van-icon name="arrow" color="#999" size="16px" />
+        </view>
+      </picker>
+    </view>
+
+    <!-- 日志描述 -->
+    <view class="field-group">
+      <view class="field-label">日志描述</view>
+      <view class="field-wrap">
+        <van-field
+          value="{{ description }}"
+          type="textarea"
+          placeholder="请输入日志内容，如操作方式、用量、备注等"
+          border="{{ false }}"
+          autosize="{{ { minHeight: 120 } }}"
+          bind:change="onFieldChange"
+          data-key="description"
+          maxlength="500"
+          show-word-limit
+        />
+      </view>
+    </view>
+
+    <!-- 图片（可选） -->
+    <view class="field-group">
+      <view class="field-label">图片记录 <text class="field-hint">（可选）</text></view>
+      <van-uploader
+        file-list="{{ fileList }}"
+        max-count="1"
+        accept="image"
+        bind:after-read="onAfterRead"
+        bind:delete="onDeleteImage"
+        upload-icon="photograph"
+        upload-text="点击上传"
+        image-fit="aspectFill"
+        preview-size="160rpx"
+      />
+    </view>
+
+    <!-- 提交按钮 -->
+    <van-button
+      type="warning"
+      block
+      round
+      color="#FF8C00"
+      loading="{{ submitting }}"
+      loading-text="提交中..."
+      disabled="{{ submitting }}"
+      bind:click="onSubmit"
+      custom-class="submit-btn"
+    >
+      提交日志
+    </van-button>
+  </view>
+</view>
+
+<van-toast id="van-toast" />
