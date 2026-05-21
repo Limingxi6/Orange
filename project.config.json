@@ -42,6 +42,14 @@
         "type": "folder"
       },
       {
+        "value": "data",
+        "type": "folder"
+      },
+      {
+        "value": "models",
+        "type": "folder"
+      },
+      {
         "value": ".git",
         "type": "folder"
       },
@@ -79,6 +87,18 @@
       },
       {
         "value": "docs.zip",
+        "type": "file"
+      },
+      {
+        "value": "config.yml",
+        "type": "file"
+      },
+      {
+        "value": "readme.txt",
+        "type": "file"
+      },
+      {
+        "value": "package-lock.json",
         "type": "file"
       }
     ],

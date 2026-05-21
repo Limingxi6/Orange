@@ -1,20 +1,21 @@
-﻿【02作品代码文件夹说明】
+﻿初始化本地后端数据库（本机 MySQL）
+cd E:\Orange\backend
+# 首次才需要
+copy .env.example .env
+# 确认 .env 里 DATABASE_URL 是 mysql://root:@127.0.0.1:3306/orange_db
 
-一、文件夹作用
-本文件夹用于提交“橘源通”项目的作品代码与相关数据压缩包，便于评审老师统一下载、解压和复现项目。
+mysql -h127.0.0.1 -P3306 -uroot -e "CREATE DATABASE IF NOT EXISTS orange_db DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+npm install
+npx prisma migrate deploy
+npm run prisma:seed
+启动 AI 服务（本地）
+cd E:\Orange\ai
+pip install -r requirements.txt
+uvicorn service.app:app --host 0.0.0.0 --port 9001
+启动后端（本地）
+cd E:\Orange\backend
+npm run start:dev
+本机验收
+curl -i -X POST http://127.0.0.1:8080/api/auth/login -H "Content-Type: application/json" -d "{\"phone\":\"13800000000\",\"password\":\"123456\"}"
+返回 code:0 就是通了。
 
-二、文件说明
-1. Orange.zip
-- 内容：项目主代码包（含小程序前端、NestJS 后端、Python AI 工程、接口与开发文档等）。
-- 用途：用于查看与运行项目核心功能代码。
-
-2. data.zip
-- 内容：项目运行/训练所需的数据文件集合。
-- 用途：用于支撑模型推理、训练或功能联调中的数据依赖。
-
-3. readme.txt
-- 内容：本说明文件。
-- 用途：用于说明本文件夹用途及各文件含义。
-
-三、使用建议
-建议先解压 Orange.zip，再按其中说明文档配置环境；涉及数据相关功能时，再解压并挂载 data.zip 对应数据目录。

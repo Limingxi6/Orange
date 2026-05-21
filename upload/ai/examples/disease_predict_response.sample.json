@@ -1,9 +1,0 @@
-﻿{
-  "label": "canker",
-  "confidence": 0.9123,
-  "severity": "high",
-  "advice": "疑似柑橘溃疡病，建议48小时内人工复核病斑并按当地规范开展防治。建议尽快安排人工复核，避免延误处理时机。",
-  "needManualReview": true,
-  "narrative": "系统判断柑橘疑似canker，置信度0.91，风险级别high。建议尽快人工复核。",
-  "batch_id": "1001"
-}
