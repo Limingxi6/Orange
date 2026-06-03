@@ -1,0 +1,125 @@
+﻿橘源通软件工程项目提交说明
+
+一、代码仓库地址
+
+GitHub：https://github.com/Limingxi6/Orange.git
+
+二、项目简介
+
+“橘源通”是一个农业数字化软件工程项目，包含微信小程序前端、NestJS 后端服务和 Python AI 服务。
+
+系统主要功能包括：
+1. 用户登录与认证
+2. 批次管理
+3. 农事日志记录
+4. 病害识别
+5. 果实分级与定价
+6. 风险预警
+7. 二维码与溯源查询
+8. AI 结果解释、建议生成、问答与文案辅助
+
+三、工程目录说明
+
+1. backend：NestJS 后端服务代码
+2. ai：Python AI 工程代码
+3. pages：微信小程序页面代码
+4. services：微信小程序请求封装代码
+5. components：微信小程序组件代码
+6. docs：需求、设计、接口、测试、部署和用户使用相关文档
+
+四、运行环境
+
+建议准备以下环境：
+1. Node.js
+2. MySQL
+3. Python 3
+4. 微信开发者工具
+
+五、后端服务运行说明
+
+进入后端目录：
+
+cd backend
+
+首次运行需要安装依赖并配置环境变量：
+
+npm install
+copy .env.example .env
+
+请确认 .env 中 DATABASE_URL 配置为本机可用的 MySQL 数据库地址，例如：
+
+mysql://root:@127.0.0.1:3306/orange_db
+
+初始化数据库：
+
+mysql -h127.0.0.1 -P3306 -uroot -e "CREATE DATABASE IF NOT EXISTS orange_db DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+npx prisma migrate deploy
+npm run prisma:seed
+
+启动后端服务：
+
+npm run start:dev
+
+后端默认服务地址：
+
+http://127.0.0.1:8080
+
+接口文档地址：
+
+http://127.0.0.1:8080/docs
+
+六、AI 服务运行说明
+
+进入 AI 工程目录：
+
+cd ai
+
+安装依赖：
+
+pip install -r requirements.txt
+
+启动 AI 服务：
+
+uvicorn service.app:app --host 0.0.0.0 --port 9001
+
+AI 服务主要接口包括：
+1. POST /ai/disease/predict：病害识别
+2. POST /ai/fruit/grade：果实分级与定价
+3. POST /predict/risk：风险评估
+
+七、微信小程序运行说明
+
+1. 打开微信开发者工具。
+2. 导入本项目根目录。
+3. 确认小程序请求地址与本地后端服务地址一致。
+4. 启动后端服务和 AI 服务后，在微信开发者工具中预览或调试小程序。
+
+八、测试账号
+
+手机号：13800000000
+密码：123456
+
+可使用以下命令测试登录接口：
+
+curl -i -X POST http://127.0.0.1:8080/api/auth/login -H "Content-Type: application/json" -d "{\"phone\":\"13800000000\",\"password\":\"123456\"}"
+
+返回 code 为 0 表示登录接口可用。
+
+九、主要文档位置
+
+1. docs/部署运行手册.md：部署与运行说明
+2. docs/api-interface-list.md：接口清单
+3. docs/需求分析文档.md：需求分析
+4. docs/详细设计-系统架构.md：系统架构设计
+5. docs/测试与验收手册.md：测试与验收说明
+6. docs/橘源通软件工程平时作业报告.md：项目报告
+
+十、提交说明
+
+本项目代码、配置示例、接口文档和运行说明已统一放在 GitHub 仓库中。
+
+提交验收时可提供：
+1. GitHub 仓库地址：https://github.com/Limingxi6/Orange.git
+2. 本文件：软件提交说明.txt
+3. 如需用户手册，可参考 docs/部署运行手册.md 与 docs/测试与验收手册.md
+
